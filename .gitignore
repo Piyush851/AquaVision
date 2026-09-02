@@ -1,0 +1,40 @@
+# Environment & Secrets
+.env
+*.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+ENV/
+build/
+dist/
+*.egg-info/
+
+# Node / Frontend
+node_modules/
+.next/
+out/
+.nuxt/
+dist/
+
+# Operating System & IDEs
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Large binaries / model checkpoints unless tracked by backend/.gitignore
+*.pth
+*.pt
+*.onnx
+!backend/weights/model.pth
+
+# Backend uploads/outputs
+backend/uploads/*
+!backend/uploads/.gitkeep
+backend/outputs/*
+!backend/outputs/.gitkeep

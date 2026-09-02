@@ -1,0 +1,58 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Environment Variables
+.env
+
+# Uploads & Outputs (preserve directory structure via .gitkeep)
+uploads/*
+!uploads/.gitkeep
+outputs/*
+!outputs/.gitkeep
+
+# Weights (ignore large checkpoint binary files except .gitkeep or default lightweight weights)
+weights/*.pt
+weights/*.pth
+weights/*.onnx
+!weights/.gitkeep
+!weights/model.pth
+
+# Dataset images
+dataset/train/*
+!dataset/train/.gitkeep
+dataset/val/*
+!dataset/val/.gitkeep
+dataset/test/*
+!dataset/test/.gitkeep
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
