@@ -1,112 +1,119 @@
-import os
-import torch
+import time
+import cv2
 import numpy as np
-import logging
+import torch
 from pathlib import Path
-from typing import Tuple, Union, Optional
-from PIL import Image
+from typing import Union, Dict, Any, Optional
 
 from app.model.model import AquaVisionNet
 from app.utils.image_processing import (
-    preprocess_image_tensor,
-    postprocess_tensor_image,
-    algorithmic_underwater_enhance,
+    preprocess_image,
+    postprocess_tensor,
+    classical_enhancement,
     calculate_psnr
 )
 
-logger = logging.getLogger("aquavision.inference")
 
 class EnhancerInference:
     """
-    Inference Manager for AquaVision model.
-    Handles device configuration, checkpoint weight loading, and forward pass processing.
+    Singleton inference engine with model checkpoint loader and automatic classical fallback.
     """
+    _instance: Optional["EnhancerInference"] = None
+
     def __init__(self, weights_path: str = "weights/model.pth", device_str: str = "auto"):
         self.weights_path = Path(weights_path)
-        self.device = self._select_device(device_str)
-        self.model = None
-        self.is_loaded = False
         
-        self.initialize_model()
-
-    def _select_device(self, device_str: str) -> torch.device:
+        # Configure execution device
         if device_str == "cuda" and torch.cuda.is_available():
-            return torch.device("cuda")
+            self.device = torch.device("cuda")
         elif device_str == "cpu":
-            return torch.device("cpu")
+            self.device = torch.device("cpu")
         else:
-            return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            
+        self.model: Optional[AquaVisionNet] = None
+        self.use_fallback: bool = False
+        self._load_model()
 
-    def initialize_model(self):
-        """Loads model structure and weights if checkpoint exists."""
+    def _load_model(self):
+        """Loads neural network weights or falls back to classical CV."""
         try:
-            self.model = AquaVisionNet().to(self.device)
-            if self.weights_path.exists() and self.weights_path.stat().st_size > 0:
-                logger.info(f"Loading checkpoint from {self.weights_path} to {self.device}")
-                state_dict = torch.load(self.weights_path, map_location=self.device)
-                self.model.load_state_dict(state_dict)
-                self.model.eval()
-                self.is_loaded = True
-            else:
-                logger.warning(
-                    f"Weight file '{self.weights_path}' not found or empty. "
-                    "Inference will run with algorithmic hybrid fallback mode."
-                )
-                self.model.eval()
-                self.is_loaded = False
+            if not self.weights_path.exists():
+                print(f"[Warning] Checkpoint {self.weights_path} not found. Using classical CV fallback.")
+                self.use_fallback = True
+                return
+
+            model = AquaVisionNet().to(self.device)
+            state_dict = torch.load(self.weights_path, map_location=self.device)
+            model.load_state_dict(state_dict)
+            model.eval()
+            self.model = model
+            self.use_fallback = False
+            print(f"Loaded AquaVisionNet weights from {self.weights_path} to {self.device}")
         except Exception as e:
-            logger.error(f"Error initializing model weights: {e}")
-            self.is_loaded = False
+            print(f"[Error] Failed to load model weights: {e}. Switching to fallback mode.")
+            self.model = None
+            self.use_fallback = True
+
+    @classmethod
+    def get_instance(cls, weights_path: str = "weights/model.pth") -> "EnhancerInference":
+        if cls._instance is None:
+            cls._instance = cls(weights_path=weights_path)
+        return cls._instance
 
     @torch.no_grad()
-    def enhance_image(
-        self,
-        image_input: Union[np.ndarray, Image.Image],
-        target_size: Optional[Tuple[int, int]] = (256, 256)
-    ) -> Tuple[np.ndarray, dict]:
+    def enhance(self, image_path: Union[str, Path], output_path: Union[str, Path]) -> Dict[str, Any]:
         """
-        Enhances raw underwater image. Returns (enhanced_bgr_image, metadata).
+        Enhances an underwater image and writes result to output_path.
+        Returns execution metrics dictionary.
         """
-        if isinstance(image_input, Image.Image):
-            import cv2
-            img_np = np.array(image_input)
-            raw_bgr = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
-        else:
-            raw_bgr = image_input
-
-        orig_shape = raw_bgr.shape[:2]
-
-        if self.is_loaded and self.model is not None:
-            # Deep learning inference route
-            input_tensor, _ = preprocess_image_tensor(raw_bgr, target_size=target_size)
-            input_tensor = input_tensor.to(self.device)
+        image_path = Path(image_path)
+        output_path = Path(output_path)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        raw_bgr = cv2.imread(str(image_path))
+        if raw_bgr is None:
+            raise FileNotFoundError(f"Image not found or unreadable: {image_path}")
             
-            output_tensor = self.model(input_tensor)
-            enhanced_bgr = postprocess_tensor_image(output_tensor, original_size=orig_shape)
-            method_used = "AquaVision Deep Learning Neural Network"
+        orig_h, orig_w = raw_bgr.shape[:2]
+        start_time = time.time()
+        
+        if not self.use_fallback and self.model is not None:
+            try:
+                # Preprocess to tensor [1, 3, 256, 256]
+                tensor = preprocess_image(image_path, img_size=(256, 256)).to(self.device)
+                
+                # Model forward pass
+                out_tensor = self.model(tensor)
+                
+                # Postprocess back to BGR image
+                enhanced_bgr = postprocess_tensor(out_tensor)
+                
+                # Resize to original resolution
+                if (orig_h, orig_w) != (256, 256):
+                    enhanced_bgr = cv2.resize(enhanced_bgr, (orig_w, orig_h), interpolation=cv2.INTER_CUBIC)
+                    
+                mode = "deep-learning"
+            except Exception as e:
+                print(f"[Inference Error] Neural network inference failed ({e}), falling back to classical CV.")
+                enhanced_bgr = classical_enhancement(raw_bgr)
+                mode = "fallback-classical-cv"
         else:
-            # Algorithmic computer vision fallback route
-            enhanced_bgr = algorithmic_underwater_enhance(raw_bgr)
-            method_used = "AquaVision Classical CV Pipeline (White Balance + CLAHE)"
-
-        psnr_val = calculate_psnr(raw_bgr, enhanced_bgr)
-
-        metadata = {
-            "method": method_used,
+            enhanced_bgr = classical_enhancement(raw_bgr)
+            mode = "fallback-classical-cv"
+            
+        # Save output image
+        cv2.imwrite(str(output_path), enhanced_bgr)
+        elapsed_sec = round(time.time() - start_time, 4)
+        
+        psnr_val = round(calculate_psnr(raw_bgr, enhanced_bgr), 2)
+        
+        return {
+            "inference_mode": mode,
             "device": str(self.device),
-            "original_resolution": f"{orig_shape[1]}x{orig_shape[0]}",
-            "estimated_psnr": round(psnr_val, 2),
-            "model_checkpoint_active": self.is_loaded
+            "processing_time_seconds": elapsed_sec,
+            "estimated_psnr": psnr_val,
+            "input_path": str(image_path),
+            "output_path": str(output_path),
+            "original_dimensions": f"{orig_w}x{orig_h}"
         }
-
-        return enhanced_bgr, metadata
-
-
-# Global singleton engine instance
-_enhancer_instance: Optional[EnhancerInference] = None
-
-def get_enhancer(weights_path: str = "weights/model.pth") -> EnhancerInference:
-    global _enhancer_instance
-    if _enhancer_instance is None:
-        _enhancer_instance = EnhancerInference(weights_path=weights_path)
-    return _enhancer_instance

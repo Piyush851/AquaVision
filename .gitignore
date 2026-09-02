@@ -33,8 +33,24 @@ Thumbs.db
 *.onnx
 !backend/weights/model.pth
 
-# Backend uploads/outputs
+# Backend uploads/outputs/datasets
 backend/uploads/*
 !backend/uploads/.gitkeep
 backend/outputs/*
 !backend/outputs/.gitkeep
+backend/dataset/**
+!backend/dataset/**/
+!backend/dataset/**/.gitkeep
+
+# Temporary & Test files
+temp.py
+backend/temp.py
+tests/
+backend/tests/
+*.log
+DEV_PLAN.md
+backend/DEV_PLAN.md
+.plan_reference.md
+backend/.plan_reference.md
+
+

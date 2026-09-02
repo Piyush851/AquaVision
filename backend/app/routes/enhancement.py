@@ -1,23 +1,19 @@
 import os
 import uuid
 import time
-import cv2
-import numpy as np
 from pathlib import Path
 from typing import List, Dict, Any
-from fastapi import APIRouter, File, UploadFile, HTTPException, Query
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi import APIRouter, File, UploadFile, HTTPException
 from pydantic import BaseModel
 
-from app.model.inference import get_enhancer
-from app.utils.image_processing import calculate_psnr
+from app.model.inference import EnhancerInference
 
-router = APIRouter(prefix="/api/v1/enhance", tags=["Image Enhancement"])
+router = APIRouter(prefix="/api/v1/enhance", tags=["Enhancement"])
 
-UPLOAD_DIR = Path(os.getenv("UPLOAD_DIR", "uploads"))
-OUTPUT_DIR = Path(os.getenv("OUTPUT_DIR", "outputs"))
+backend_root = Path(__file__).resolve().parent.parent.parent
+UPLOAD_DIR = backend_root / "uploads"
+OUTPUT_DIR = backend_root / "outputs"
 
-# Ensure storage directories exist
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -25,94 +21,77 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 class EnhancementResponse(BaseModel):
     id: str
     filename: str
-    raw_url: str
+    original_url: str
     enhanced_url: str
-    timestamp: float
-    metadata: Dict[str, Any]
+    metrics: Dict[str, Any]
 
 
 @router.post("/upload", response_model=EnhancementResponse)
-async def upload_and_enhance(
-    file: UploadFile = File(...)
-):
+async def upload_and_enhance(file: UploadFile = File(...)):
     """
-    Accepts an uploaded underwater image file (JPG, PNG, WEBP), performs enhancement,
-    and returns metadata along with static file access URLs.
+    Accepts an underwater image file, runs neural network enhancement,
+    saves the raw and enhanced files, and returns accessible URLs and performance metrics.
     """
-    if not file.content_type.startswith("image/"):
-        raise HTTPException(status_code=400, detail="File uploaded must be an image (JPEG, PNG, WEBP).")
-
+    if not file.content_type or not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="Uploaded file must be a valid image.")
+        
+    file_id = str(uuid.uuid4())[:8]
+    ext = Path(file.filename).suffix.lower() or ".jpg"
+    
+    raw_name = f"{file_id}_raw{ext}"
+    enhanced_name = f"{file_id}_enhanced.png"
+    
+    raw_path = UPLOAD_DIR / raw_name
+    enhanced_path = OUTPUT_DIR / enhanced_name
+    
     try:
-        contents = await file.read()
-        nparr = np.frombuffer(contents, np.uint8)
-        raw_bgr = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-
-        if raw_bgr is None:
-            raise HTTPException(status_code=400, detail="Could not decode uploaded image file.")
-
-        # Generate unique task ID
-        file_id = str(uuid.uuid4())[:8]
-        extension = Path(file.filename).suffix or ".jpg"
-        raw_filename = f"{file_id}_raw{extension}"
-        enhanced_filename = f"{file_id}_enhanced.png"
-
-        raw_path = UPLOAD_DIR / raw_filename
-        enhanced_path = OUTPUT_DIR / enhanced_filename
-
-        # Save raw image
-        cv2.imwrite(str(raw_path), raw_bgr)
-
-        # Execute enhancement pipeline
-        enhancer = get_enhancer()
-        start_time = time.time()
-        enhanced_bgr, meta = enhancer.enhance_image(raw_bgr)
-        proc_time = round(time.time() - start_time, 3)
-
-        # Save enhanced output
-        cv2.imwrite(str(enhanced_path), enhanced_bgr)
-
-        meta["processing_time_seconds"] = proc_time
-
+        content = await file.read()
+        with open(raw_path, "wb") as f:
+            f.write(content)
+            
+        enhancer = EnhancerInference.get_instance()
+        metrics = enhancer.enhance(raw_path, enhanced_path)
+        
         return EnhancementResponse(
             id=file_id,
-            filename=file.filename,
-            raw_url=f"/uploads/{raw_filename}",
-            enhanced_url=f"/outputs/{enhanced_filename}",
-            timestamp=time.time(),
-            metadata=meta
+            filename=file.filename or raw_name,
+            original_url=f"/uploads/{raw_name}",
+            enhanced_url=f"/outputs/{enhanced_name}",
+            metrics=metrics
         )
-
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Enhancement processing failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Enhancement failed: {str(e)}")
 
 
 @router.get("/history", response_model=List[Dict[str, Any]])
-async def get_enhancement_history():
-    """
-    Returns list of recently processed enhanced outputs.
-    """
-    results = []
-    for file_path in OUTPUT_DIR.glob("*_enhanced.png"):
-        file_id = file_path.stem.split("_")[0]
-        results.append({
+async def get_history():
+    """Returns a list of recently processed enhanced outputs."""
+    records = []
+    for out_file in OUTPUT_DIR.glob("*_enhanced.png"):
+        file_id = out_file.stem.replace("_enhanced", "")
+        # Look for corresponding raw file in uploads
+        raw_matches = list(UPLOAD_DIR.glob(f"{file_id}_raw.*"))
+        raw_url = f"/uploads/{raw_matches[0].name}" if raw_matches else None
+        
+        records.append({
             "id": file_id,
-            "enhanced_file": file_path.name,
-            "enhanced_url": f"/outputs/{file_path.name}",
-            "created_at": file_path.stat().st_mtime
+            "enhanced_file": out_file.name,
+            "enhanced_url": f"/outputs/{out_file.name}",
+            "original_url": raw_url,
+            "created_at": out_file.stat().st_mtime
         })
-    results.sort(key=lambda x: x["created_at"], reverse=True)
-    return results
+        
+    records.sort(key=lambda x: x["created_at"], reverse=True)
+    return records
 
 
 @router.get("/info")
-async def get_model_info():
-    """
-    Returns model status, device info, and backend health.
-    """
-    enhancer = get_enhancer()
+async def get_system_info():
+    """Returns runtime device and model status."""
+    enhancer = EnhancerInference.get_instance()
     return {
         "status": "ready",
         "device": str(enhancer.device),
-        "model_loaded": enhancer.is_loaded,
+        "model_loaded": not enhancer.use_fallback,
         "weights_path": str(enhancer.weights_path)
     }

@@ -3,127 +3,137 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-class ChannelAttention(nn.Module):
-    """
-    Channel Attention Module to dynamically re-weight RGB feature channels 
-    to compensate for selective underwater light attenuation (red light absorption).
-    """
-    def __init__(self, in_channels: int, reduction: int = 16):
-        super(ChannelAttention, self).__init__()
-        self.avg_pool = nn.AdaptiveAvgPool2d(1)
-        self.max_pool = nn.AdaptiveMaxPool2d(1)
-        
-        reduced_channels = max(in_channels // reduction, 8)
+class SEBlock(nn.Module):
+    """Squeeze-and-Excitation channel attention block."""
+    def __init__(self, channels: int, reduction: int = 16):
+        super().__init__()
+        reduced = max(channels // reduction, 8)
         self.fc = nn.Sequential(
-            nn.Conv2d(in_channels, reduced_channels, 1, bias=False),
+            nn.AdaptiveAvgPool2d(1),
+            nn.Conv2d(channels, reduced, kernel_size=1, bias=False),
             nn.ReLU(inplace=True),
-            nn.Conv2d(reduced_channels, in_channels, 1, bias=False)
+            nn.Conv2d(reduced, channels, kernel_size=1, bias=False),
+            nn.Sigmoid()
         )
-        self.sigmoid = nn.Sigmoid()
 
-    def forward(self, x):
-        avg_out = self.fc(self.avg_pool(x))
-        max_out = self.fc(self.max_pool(x))
-        out = avg_out + max_out
-        return x * self.sigmoid(out)
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return x * self.fc(x)
 
 
 class ResidualBlock(nn.Module):
-    """
-    Residual Block with Conv-InstanceNorm-LeakyReLU layers for feature preservation.
-    """
+    """Residual block with InstanceNorm and SE channel attention."""
     def __init__(self, channels: int):
-        super(ResidualBlock, self).__init__()
-        self.block = nn.Sequential(
+        super().__init__()
+        self.conv = nn.Sequential(
             nn.Conv2d(channels, channels, kernel_size=3, padding=1, bias=False),
             nn.InstanceNorm2d(channels),
             nn.LeakyReLU(0.2, inplace=True),
             nn.Conv2d(channels, channels, kernel_size=3, padding=1, bias=False),
             nn.InstanceNorm2d(channels)
         )
-        self.attention = ChannelAttention(channels)
+        self.se = SEBlock(channels)
+        self.relu = nn.LeakyReLU(0.2, inplace=True)
 
-    def forward(self, x):
-        res = self.block(x)
-        res = self.attention(res)
-        return x + res
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        res = self.conv(x)
+        res = self.se(res)
+        return self.relu(x + res)
+
+
+class DownBlock(nn.Module):
+    """Downsampling stage with convolution and residual attention block."""
+    def __init__(self, in_channels: int, out_channels: int):
+        super().__init__()
+        self.down = nn.Sequential(
+            nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=2, padding=1, bias=False),
+            nn.InstanceNorm2d(out_channels),
+            nn.LeakyReLU(0.2, inplace=True)
+        )
+        self.res = ResidualBlock(out_channels)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.res(self.down(x))
+
+
+class UpBlock(nn.Module):
+    """Upsampling stage with transposed convolution and skip connection fusion."""
+    def __init__(self, in_channels: int, skip_channels: int, out_channels: int):
+        super().__init__()
+        self.up = nn.ConvTranspose2d(
+            in_channels, out_channels, kernel_size=4, stride=2, padding=1, bias=False
+        )
+        self.norm = nn.InstanceNorm2d(out_channels)
+        self.relu = nn.LeakyReLU(0.2, inplace=True)
+        self.conv = nn.Sequential(
+            nn.Conv2d(out_channels + skip_channels, out_channels, kernel_size=3, padding=1, bias=False),
+            nn.InstanceNorm2d(out_channels),
+            nn.LeakyReLU(0.2, inplace=True),
+            ResidualBlock(out_channels)
+        )
+
+    def forward(self, x: torch.Tensor, skip: torch.Tensor) -> torch.Tensor:
+        x = self.relu(self.norm(self.up(x)))
+        if x.shape[2:] != skip.shape[2:]:
+            x = F.interpolate(x, size=skip.shape[2:], mode="bilinear", align_corners=False)
+        merged = torch.cat([x, skip], dim=1)
+        return self.conv(merged)
 
 
 class AquaVisionNet(nn.Module):
     """
-    AquaVision Deep Learning Neural Network for Underwater Image Enhancement (UWIE).
-    Uses residual U-Net architecture with multi-scale skip connections and color channel attention.
+    Residual U-Net with SE Attention for Underwater Image Enhancement.
     """
-    def __init__(self, in_channels: int = 3, out_channels: int = 3, base_features: int = 64):
-        super(AquaVisionNet, self).__init__()
-
-        # Initial Feature Extractor
-        self.enc_conv1 = nn.Sequential(
-            nn.Conv2d(in_channels, base_features, kernel_size=7, padding=3, bias=False),
-            nn.InstanceNorm2d(base_features),
-            nn.LeakyReLU(0.2, inplace=True)
+    def __init__(self, in_channels: int = 3, out_channels: int = 3, base_channels: int = 32):
+        super().__init__()
+        
+        # Initial feature extraction (Level 0)
+        self.init_conv = nn.Sequential(
+            nn.Conv2d(in_channels, base_channels, kernel_size=3, padding=1, bias=False),
+            nn.InstanceNorm2d(base_channels),
+            nn.LeakyReLU(0.2, inplace=True),
+            ResidualBlock(base_channels)
         )
-
-        # Downsampling Encoder
-        self.enc_conv2 = nn.Sequential(
-            nn.Conv2d(base_features, base_features * 2, kernel_size=3, stride=2, padding=1, bias=False),
-            nn.InstanceNorm2d(base_features * 2),
-            nn.LeakyReLU(0.2, inplace=True)
+        
+        # 4 Downsampling stages
+        self.down1 = DownBlock(base_channels, base_channels * 2)       # 32 -> 64
+        self.down2 = DownBlock(base_channels * 2, base_channels * 4)   # 64 -> 128
+        self.down3 = DownBlock(base_channels * 4, base_channels * 8)   # 128 -> 256
+        self.down4 = DownBlock(base_channels * 8, base_channels * 16)  # 256 -> 512
+        
+        # Bottleneck
+        self.bottleneck = nn.Sequential(
+            ResidualBlock(base_channels * 16),
+            ResidualBlock(base_channels * 16)
         )
-        self.enc_conv3 = nn.Sequential(
-            nn.Conv2d(base_features * 2, base_features * 4, kernel_size=3, stride=2, padding=1, bias=False),
-            nn.InstanceNorm2d(base_features * 4),
-            nn.LeakyReLU(0.2, inplace=True)
-        )
-
-        # Residual Bottleneck with Channel Attention
-        self.res_blocks = nn.Sequential(
-            ResidualBlock(base_features * 4),
-            ResidualBlock(base_features * 4),
-            ResidualBlock(base_features * 4),
-            ResidualBlock(base_features * 4)
-        )
-
-        # Upsampling Decoder
-        self.dec_conv1 = nn.Sequential(
-            nn.ConvTranspose2d(base_features * 4, base_features * 2, kernel_size=3, stride=2, padding=1, output_padding=1, bias=False),
-            nn.InstanceNorm2d(base_features * 2),
-            nn.ReLU(inplace=True)
-        )
-        self.dec_conv2 = nn.Sequential(
-            nn.ConvTranspose2d(base_features * 4, base_features, kernel_size=3, stride=2, padding=1, output_padding=1, bias=False),
-            nn.InstanceNorm2d(base_features),
-            nn.ReLU(inplace=True)
-        )
-
-        # Output Generation with Residual Shortcut Connection
+        
+        # 4 Upsampling stages with skip connections
+        self.up4 = UpBlock(base_channels * 16, base_channels * 8, base_channels * 8)  # 512 + 256 -> 256
+        self.up3 = UpBlock(base_channels * 8, base_channels * 4, base_channels * 4)   # 256 + 128 -> 128
+        self.up2 = UpBlock(base_channels * 4, base_channels * 2, base_channels * 2)   # 128 + 64 -> 64
+        self.up1 = UpBlock(base_channels * 2, base_channels, base_channels)           # 64 + 32 -> 32
+        
+        # Output reconstruction layer bounded to [0, 1]
         self.out_conv = nn.Sequential(
-            nn.Conv2d(base_features * 2, out_channels, kernel_size=7, padding=3),
-            nn.Tanh()
+            nn.Conv2d(base_channels, out_channels, kernel_size=3, padding=1),
+            nn.Sigmoid()
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # Scale input range [0, 1] -> [-1, 1] for Tanh processing
-        x_norm = x * 2.0 - 1.0
-
         # Encoder forward pass
-        e1 = self.enc_conv1(x_norm)
-        e2 = self.enc_conv2(e1)
-        e3 = self.enc_conv3(e2)
-
+        s0 = self.init_conv(x)
+        s1 = self.down1(s0)
+        s2 = self.down2(s1)
+        s3 = self.down3(s2)
+        s4 = self.down4(s3)
+        
         # Bottleneck
-        b = self.res_blocks(e3)
-
-        # Decoder with Skip Connections
-        d1 = self.dec_conv1(b)
-        d1_cat = torch.cat([d1, e2], dim=1)
-
-        d2 = self.dec_conv2(d1_cat)
-        d2_cat = torch.cat([d2, e1], dim=1)
-
-        # Output residual prediction
-        residual = self.out_conv(d2_cat)
-        out = torch.clamp(x_norm + residual, -1.0, 1.0)
-
-        # Re-scale back to [0, 1] range
-        return (out + 1.0) / 2.0
+        b = self.bottleneck(s4)
+        
+        # Decoder forward pass with skip connections
+        d4 = self.up4(b, s3)
+        d3 = self.up3(d4, s2)
+        d2 = self.up2(d3, s1)
+        d1 = self.up1(d2, s0)
+        
+        # Sigmoid output in [0, 1]
+        return self.out_conv(d1)

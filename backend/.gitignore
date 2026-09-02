@@ -44,15 +44,20 @@ weights/*.onnx
 !weights/model.pth
 
 # Dataset images
-dataset/train/*
-!dataset/train/.gitkeep
-dataset/val/*
-!dataset/val/.gitkeep
-dataset/test/*
-!dataset/test/.gitkeep
+dataset/**
+!dataset/**/
+!dataset/**/.gitkeep
 
 # IDE & OS
 .vscode/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Temporary & Test files
+temp.py
+tests/
+*.log
+DEV_PLAN.md
+.plan_reference.md
+

@@ -1,8 +1,13 @@
 import os
+import sys
 from pathlib import Path
 from dotenv import load_dotenv
 
-# Load environment variables
+# Ensure backend root is in sys.path when running `python app/main.py` directly
+backend_root = Path(__file__).resolve().parent.parent
+if str(backend_root) not in sys.path:
+    sys.path.insert(0, str(backend_root))
+
 load_dotenv()
 
 from fastapi import FastAPI
@@ -17,30 +22,28 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# CORS setup
-origins_str = os.getenv("ALLOWED_ORIGINS", "*")
-origins = [origin.strip() for origin in origins_str.split(",")] if origins_str != "*" else ["*"]
-
+# CORS middleware allowing all origins for local frontend development
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Ensure directories exist
-UPLOAD_DIR = Path(os.getenv("UPLOAD_DIR", "uploads"))
-OUTPUT_DIR = Path(os.getenv("OUTPUT_DIR", "outputs"))
+# Static file storage directories
+backend_root = Path(__file__).resolve().parent.parent
+UPLOAD_DIR = backend_root / "uploads"
+OUTPUT_DIR = backend_root / "outputs"
 
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-# Mount static file routes for raw uploads and enhanced outputs
+# Mount static directories
 app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 app.mount("/outputs", StaticFiles(directory=str(OUTPUT_DIR)), name="outputs")
 
-# Register routes
+# Include routes
 app.include_router(enhancement_router)
 
 
@@ -50,8 +53,8 @@ async def root():
         "project": "AquaVision",
         "service": "Underwater Image Enhancement Backend",
         "version": "1.0.0",
-        "docs": "/docs",
-        "status": "online"
+        "status": "online",
+        "docs": "/docs"
     }
 
 
@@ -64,4 +67,4 @@ if __name__ == "__main__":
     import uvicorn
     host = os.getenv("HOST", "0.0.0.0")
     port = int(os.getenv("PORT", 8000))
-    uvicorn.run("app.main:app", host=host, port=port, reload=True)
+    uvicorn.run("app.main:app", host=host, port=port, reload=False)
