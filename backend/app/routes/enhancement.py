@@ -27,7 +27,10 @@ class EnhancementResponse(BaseModel):
 
 
 @router.post("/upload", response_model=EnhancementResponse)
-async def upload_and_enhance(file: UploadFile = File(...)):
+async def upload_and_enhance(
+    file: UploadFile = File(...),
+    force_classical: bool = False
+):
     """
     Accepts an underwater image file, runs neural network enhancement,
     saves the raw and enhanced files, and returns accessible URLs and performance metrics.
@@ -50,7 +53,7 @@ async def upload_and_enhance(file: UploadFile = File(...)):
             f.write(content)
             
         enhancer = EnhancerInference.get_instance()
-        metrics = enhancer.enhance(raw_path, enhanced_path)
+        metrics = enhancer.enhance(raw_path, enhanced_path, force_classical=force_classical)
         
         return EnhancementResponse(
             id=file_id,

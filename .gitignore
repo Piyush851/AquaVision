@@ -1,6 +1,11 @@
 # Environment & Secrets
 .env
-*.env
+.env.*
+.env.local
+.env.*.local
+!.env.example
+!backend/.env.example
+!frontend/.env.example
 
 # Python
 __pycache__/
@@ -20,6 +25,8 @@ node_modules/
 out/
 .nuxt/
 dist/
+*.tsbuildinfo
+next-env.d.ts
 
 # Operating System & IDEs
 .DS_Store
@@ -27,11 +34,12 @@ Thumbs.db
 .vscode/
 .idea/
 
-# Large binaries / model checkpoints unless tracked by backend/.gitignore
-*.pth
+# Large binaries / model checkpoints
 *.pt
+*.pth
 *.onnx
 !backend/weights/model.pth
+!backend/weights/.gitkeep
 
 # Backend uploads/outputs/datasets
 backend/uploads/*
@@ -39,18 +47,28 @@ backend/uploads/*
 backend/outputs/*
 !backend/outputs/.gitkeep
 backend/dataset/**
-!backend/dataset/**/
 !backend/dataset/**/.gitkeep
 
-# Temporary & Test files
+# Temporary, Scratch & Test files
 temp.py
 backend/temp.py
 tests/
 backend/tests/
 *.log
+*.tmp
+*.bak
+
+# Agent & Planning files
+AGENTS.md
+CLAUDE.md
 DEV_PLAN.md
 backend/DEV_PLAN.md
 .plan_reference.md
 backend/.plan_reference.md
+frontend/AGENTS.md
+frontend/CLAUDE.md
+.agents/
+.gemini/
+
 
 

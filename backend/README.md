@@ -1,46 +1,38 @@
-# AquaVision Backend
+# AquaVision Backend 🌊
 
-**AquaVision** is a high-performance **Underwater Image Enhancement (UWIE)** API and deep learning system built using **FastAPI**, **PyTorch**, and **OpenCV**.
+The backend API and deep learning engine for **AquaVision**, built using **FastAPI**, **PyTorch**, and **OpenCV**.
 
 ---
 
-## 📁 File & Directory Structure
+## 📁 Directory Structure
 
 ```
 backend/
-│
 ├── app/
-│   ├── main.py                    # FastAPI web server entrypoint & middleware configuration
-│   │
+│   ├── main.py                    # FastAPI server entrypoint & CORS middleware
 │   ├── routes/
-│   │   └── enhancement.py          # REST API endpoints for uploading & enhancing images
-│   │
+│   │   └── enhancement.py          # REST API endpoints (upload, history, info)
 │   ├── model/
-│   │   ├── model.py                # AquaVisionNet PyTorch deep learning network
+│   │   ├── model.py                # AquaVisionNet PyTorch Residual Attention U-Net
 │   │   └── inference.py            # Model loader & real-time inference manager
-│   │
 │   └── utils/
-│       └── image_processing.py     # Image preprocessing, Gray-World White Balance & CLAHE
+│       └── image_processing.py     # Gray-World White Balance, CLAHE, PSNR, UIQM calculation
 │
-├── dataset/
-│   ├── train/                      # Training underwater image dataset
-│   ├── val/                        # Validation dataset
-│   └── test/                       # Test image samples
+├── dataset/                        # Dataset folder layout
+│   ├── train/                      # Paired training set (raw/ & reference/)
+│   ├── val/                        # Paired validation set (raw/ & reference/)
+│   └── test/                       # Test set (raw/ & reference/)
 │
 ├── weights/
 │   └── model.pth                   # Trained PyTorch neural network checkpoint
 │
-├── uploads/                        # Temporary store for raw user uploaded images
-├── outputs/                        # Storage location for enhanced output images
-│
+├── uploads/                        # Ephemeral raw image storage
+├── outputs/                        # Storage for enhanced output images
 ├── training/
-│   └── train.py                    # Complete PyTorch model training script
-│
-├── .env                            # Active environment configuration
-├── .env.example                    # Environment template
-├── .gitignore                      # Git exclusion patterns
+│   └── train.py                    # PyTorch model training and validation pipeline
 ├── requirements.txt                # Python package dependencies
-└── README.md                       # Backend documentation & setup guide
+├── .env.example                    # Environment variable configuration template
+└── README.md                       # Backend documentation
 ```
 
 ---
@@ -48,99 +40,90 @@ backend/
 ## ⚡ Quick Start & Installation
 
 ### 1. Prerequisites
-- Python 3.9+ installed
-- CUDA-compatible GPU (optional, automatically uses CPU if unavailable)
+- Python 3.9+
+- CUDA GPU (optional, auto-fallback to CPU)
 
-### 2. Install Dependencies
+### 2. Environment Setup
 
 ```bash
-# Navigate to the backend directory
 cd backend
 
-# Create and activate virtual environment (optional)
+# Create and activate virtual environment
 python -m venv venv
-# On Windows:
+
+# Windows:
 venv\Scripts\activate
-# On Linux/macOS:
+# Linux/macOS:
 source venv/bin/activate
 
 # Install required packages
 pip install -r requirements.txt
+
+# Copy example environment configuration
+cp .env.example .env
 ```
 
----
-
-## 🚀 Running the API Server
-
-Start the FastAPI application server using `uvicorn`:
+### 3. Run FastAPI Server
 
 ```bash
 python app/main.py
 ```
-Or directly with uvicorn CLI:
 
-```bash
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-```
-
-- **Interactive API Documentation (Swagger UI)**: [http://localhost:8000/docs](http://localhost:8000/docs)
-- **Alternative OpenAPI Docs (ReDoc)**: [http://localhost:8000/redoc](http://localhost:8000/redoc)
+- **Interactive Swagger Documentation**: [http://localhost:8000/docs](http://localhost:8000/docs)
+- **OpenAPI ReDoc**: [http://localhost:8000/redoc](http://localhost:8000/redoc)
 - **Health Check**: [http://localhost:8000/health](http://localhost:8000/health)
 
 ---
 
-## 🔌 API Endpoints
+## 📊 Dataset: Underwater Image Enhancement Benchmark (UIEB)
 
-### 1. Upload & Enhance Image
-`POST /api/v1/enhance/upload`
+AquaVision is trained on the standard **UIEB** dataset:
+- **Total Paired Samples**: 890 real-world underwater images with paired reference ground-truths.
+- **Degradation Profiles**: Green/blue color casts, severe turbidity, haze, and low-light backscatter.
 
-**Request Body:** `multipart/form-data`
-- `file`: Underwater image file (JPEG, PNG, WEBP)
-
-**Response Example:**
-```json
-{
-  "id": "a1b2c3d4",
-  "filename": "underwater_sample.jpg",
-  "raw_url": "/uploads/a1b2c3d4_raw.jpg",
-  "enhanced_url": "/outputs/a1b2c3d4_enhanced.png",
-  "timestamp": 1725281234.56,
-  "metadata": {
-    "method": "AquaVision Deep Learning Neural Network",
-    "device": "cuda",
-    "original_resolution": "1920x1080",
-    "estimated_psnr": 28.45,
-    "model_checkpoint_active": true,
-    "processing_time_seconds": 0.124
-  }
-}
+### Dataset Directory Setup
 ```
-
-### 2. View History
-`GET /api/v1/enhance/history`
-
-Returns a list of recently processed image pairs.
-
-### 3. Model & System Info
-`GET /api/v1/enhance/info`
-
-Returns device state, GPU availability, and model weights status.
+backend/dataset/
+├── train/
+│   ├── raw/           # Place raw input training images here
+│   └── reference/     # Place corresponding ground truth images here
+├── val/
+│   ├── raw/
+│   └── reference/
+└── test/
+    ├── raw/
+    └── reference/
+```
 
 ---
 
 ## 🧠 Model Architecture & Training
 
-`AquaVisionNet` is a multi-scale **Residual U-Net** featuring:
-- **Channel Attention Blocks (Squeeze-and-Excitation)** to compensate for wavelength-dependent light attenuation (red light absorption underwater).
-- **Multi-level Skip Connections** to retain fine textural details.
-- **Hybrid L1 + MSE + SSIM Loss** for color fidelity and structural preservation.
+`AquaVisionNet` is a **Residual Attention U-Net**:
+- **Channel Attention (SE Blocks)**: Recalibrates channel feature maps to counter red light attenuation.
+- **Multi-Level Skip Connections**: Preserves fine boundary and textural details.
+- **Hybrid Loss**: Combination of L1 pixel loss, MSE loss, and SSIM structural similarity.
 
-### Train Model
-
-To train the network on custom underwater datasets (e.g. UIEB, EUVP):
-
+### Training the Model
 ```bash
 python training/train.py --dataset dataset/train --val dataset/val --epochs 25 --batch-size 8 --lr 0.0001
 ```
 
-Training checkpoints will be automatically saved to `weights/model.pth`.
+Checkpoints are saved automatically to `weights/model.pth`.
+
+---
+
+## 🔌 API Endpoints
+
+### 1. Upload & Enhance
+`POST /api/v1/enhance/upload`
+- Accepts multipart form data with image file (`file`).
+- Returns raw image URL, enhanced image URL, and performance/quality metadata.
+
+### 2. Enhancement History
+`GET /api/v1/enhance/history`
+- Returns recent image pairs processed in the current session.
+
+### 3. System & Model Info
+`GET /api/v1/enhance/info`
+- Returns hardware acceleration status, GPU memory, and model checkpoint state.

@@ -29,6 +29,8 @@ venv.bak/
 
 # Environment Variables
 .env
+.env.*
+!.env.example
 
 # Uploads & Outputs (preserve directory structure via .gitkeep)
 uploads/*
@@ -36,16 +38,15 @@ uploads/*
 outputs/*
 !outputs/.gitkeep
 
-# Weights (ignore large checkpoint binary files except .gitkeep or default lightweight weights)
+# Weights (ignore large checkpoint backup files)
 weights/*.pt
-weights/*.pth
 weights/*.onnx
+weights/model_backup_latest.pth
 !weights/.gitkeep
 !weights/model.pth
 
 # Dataset images
 dataset/**
-!dataset/**/
 !dataset/**/.gitkeep
 
 # IDE & OS
@@ -58,6 +59,13 @@ Thumbs.db
 temp.py
 tests/
 *.log
+*.tmp
+*.bak
+
+# Agent & Planning files
+AGENTS.md
+CLAUDE.md
 DEV_PLAN.md
 .plan_reference.md
+
 

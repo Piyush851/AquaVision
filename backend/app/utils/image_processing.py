@@ -56,7 +56,8 @@ def preprocess_image(img_path: Union[str, Path], img_size: Tuple[int, int] = (25
     if img_size:
         img_rgb = cv2.resize(img_rgb, (img_size[1], img_size[0]), interpolation=cv2.INTER_AREA)
         
-    tensor = torch.from_numpy(img_rgb).permute(2, 0, 1).float() / 255.0
+    norm_img = img_rgb.astype(np.float32) / 255.0
+    tensor = torch.from_numpy(norm_img).permute(2, 0, 1).float()
     return tensor.unsqueeze(0)
 
 
@@ -65,9 +66,9 @@ def postprocess_tensor(tensor: torch.Tensor) -> np.ndarray:
     if tensor.dim() == 4:
         tensor = tensor.squeeze(0)
         
-    tensor = torch.clamp(tensor, 0.0, 1.0)
-    img_np = (tensor.permute(1, 2, 0).detach().cpu().numpy() * 255.0).astype(np.uint8)
-    return cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
+    img_np = tensor.detach().cpu().numpy().transpose(1, 2, 0)
+    img_rgb = (img_np * 255.0).clip(0, 255).astype(np.uint8)
+    return cv2.cvtColor(img_rgb, cv2.COLOR_RGB2BGR)
 
 
 def classical_enhancement(img_bgr: np.ndarray) -> np.ndarray:

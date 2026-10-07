@@ -9,6 +9,8 @@ from app.model.model import AquaVisionNet
 from app.utils.image_processing import (
     preprocess_image,
     postprocess_tensor,
+    apply_clahe,
+    apply_white_balance,
     classical_enhancement,
     calculate_psnr
 )
@@ -62,10 +64,15 @@ class EnhancerInference:
         return cls._instance
 
     @torch.no_grad()
-    def enhance(self, image_path: Union[str, Path], output_path: Union[str, Path]) -> Dict[str, Any]:
+    def enhance(
+        self,
+        image_path: Union[str, Path],
+        output_path: Union[str, Path],
+        force_classical: bool = False
+    ) -> Dict[str, Any]:
         """
         Enhances an underwater image and writes result to output_path.
-        Returns execution metrics dictionary.
+        Supports force_classical presentation mode and auto-fallback on error.
         """
         image_path = Path(image_path)
         output_path = Path(output_path)
@@ -78,7 +85,7 @@ class EnhancerInference:
         orig_h, orig_w = raw_bgr.shape[:2]
         start_time = time.time()
         
-        if not self.use_fallback and self.model is not None:
+        if not force_classical and not self.use_fallback and self.model is not None:
             try:
                 # Preprocess to tensor [1, 3, 256, 256]
                 tensor = preprocess_image(image_path, img_size=(256, 256)).to(self.device)
@@ -96,11 +103,13 @@ class EnhancerInference:
                 mode = "deep-learning"
             except Exception as e:
                 print(f"[Inference Error] Neural network inference failed ({e}), falling back to classical CV.")
-                enhanced_bgr = classical_enhancement(raw_bgr)
+                wb = apply_white_balance(raw_bgr)
+                enhanced_bgr = apply_clahe(wb)
                 mode = "fallback-classical-cv"
         else:
-            enhanced_bgr = classical_enhancement(raw_bgr)
-            mode = "fallback-classical-cv"
+            wb = apply_white_balance(raw_bgr)
+            enhanced_bgr = apply_clahe(wb)
+            mode = "forced-classical-cv" if force_classical else "fallback-classical-cv"
             
         # Save output image
         cv2.imwrite(str(output_path), enhanced_bgr)

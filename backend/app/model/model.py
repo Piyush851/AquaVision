@@ -56,11 +56,12 @@ class DownBlock(nn.Module):
 
 
 class UpBlock(nn.Module):
-    """Upsampling stage with transposed convolution and skip connection fusion."""
+    """Upsampling stage with Bilinear Upsample + Conv2d and skip connection fusion."""
     def __init__(self, in_channels: int, skip_channels: int, out_channels: int):
         super().__init__()
-        self.up = nn.ConvTranspose2d(
-            in_channels, out_channels, kernel_size=4, stride=2, padding=1, bias=False
+        self.up = nn.Sequential(
+            nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True),
+            nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1)
         )
         self.norm = nn.InstanceNorm2d(out_channels)
         self.relu = nn.LeakyReLU(0.2, inplace=True)
@@ -74,7 +75,7 @@ class UpBlock(nn.Module):
     def forward(self, x: torch.Tensor, skip: torch.Tensor) -> torch.Tensor:
         x = self.relu(self.norm(self.up(x)))
         if x.shape[2:] != skip.shape[2:]:
-            x = F.interpolate(x, size=skip.shape[2:], mode="bilinear", align_corners=False)
+            x = F.interpolate(x, size=skip.shape[2:], mode="bilinear", align_corners=True)
         merged = torch.cat([x, skip], dim=1)
         return self.conv(merged)
 

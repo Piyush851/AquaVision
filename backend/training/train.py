@@ -88,7 +88,10 @@ def train(
     batch_size: int = 4,
     lr: float = 1e-4,
     device_str: str = "auto",
-    dry_run: bool = False
+    dry_run: bool = False,
+    resume: bool = False,
+    resume_from: str = "",
+    start_epoch: int = 1
 ):
     # Device configuration
     if device_str == "cuda" and torch.cuda.is_available():
@@ -118,6 +121,18 @@ def train(
     
     # Model, Loss Functions, Optimizer, Scheduler
     model = AquaVisionNet().to(device)
+    
+    # Checkpoint loading for resume
+    ckpt_candidate = Path(resume_from) if resume_from else (weights_path if resume else None)
+    if ckpt_candidate and ckpt_candidate.exists():
+        try:
+            print(f"Loading checkpoint to resume: {ckpt_candidate}")
+            state_dict = torch.load(ckpt_candidate, map_location=device)
+            model.load_state_dict(state_dict)
+            print("Successfully loaded model checkpoint. Resuming training...")
+        except Exception as e:
+            print(f"[Warning] Could not load checkpoint ({e}). Starting fresh.")
+            
     l1_loss = nn.L1Loss()
     mse_loss = nn.MSELoss()
     optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=1e-5)
@@ -125,7 +140,7 @@ def train(
     
     best_psnr = -1.0
     
-    for epoch in range(1, epochs + 1):
+    for epoch in range(start_epoch, epochs + 1):
         model.train()
         running_loss = 0.0
         
@@ -194,6 +209,9 @@ if __name__ == "__main__":
     parser.add_argument("--lr", type=float, default=1e-4, help="Learning rate")
     parser.add_argument("--device", type=str, default="auto", help="Device (cuda, cpu, auto)")
     parser.add_argument("--dry-run", action="store_true", help="Run quick 1-epoch dry run")
+    parser.add_argument("--resume", action="store_true", help="Resume training from existing checkpoint weights")
+    parser.add_argument("--resume-from", type=str, default="", help="Explicit path to checkpoint file to resume from")
+    parser.add_argument("--start-epoch", type=int, default=1, help="Starting epoch number when resuming")
     
     args = parser.parse_args()
     
@@ -205,5 +223,8 @@ if __name__ == "__main__":
         batch_size=args.batch_size,
         lr=args.lr,
         device_str=args.device,
-        dry_run=args.dry_run
+        dry_run=args.dry_run,
+        resume=args.resume,
+        resume_from=args.resume_from,
+        start_epoch=args.start_epoch
     )
