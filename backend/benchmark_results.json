@@ -1,0 +1,198 @@
+{
+  "timestamp": "2026-10-21 11:29:48",
+  "hardware_device": "CUDA",
+  "gpu_name": "NVIDIA GeForce RTX 3050 Laptop GPU",
+  "total_test_images": 4,
+  "models": [
+    {
+      "id": "classical",
+      "name": "Classical CV Fallback",
+      "dataset_trained": "None (Rule-based)",
+      "domain": "Rule-based Optical Physics",
+      "is_dl": false,
+      "checkpoint": null,
+      "mean_uiqm": 1.552,
+      "mean_uciqe": 0.401,
+      "mean_psnr": 16.5,
+      "mean_ssim": 0.807,
+      "latency_ms": 89.2,
+      "fps": 11.2,
+      "params_million": 0.0,
+      "domain_breakdown": {
+        "coastal": {
+          "uiqm": 1.427,
+          "uciqe": 0.361,
+          "psnr": 13.53,
+          "ssim": 0.812,
+          "latency_ms": 159.6
+        },
+        "reefs": {
+          "uiqm": 1.596,
+          "uciqe": 0.448,
+          "psnr": 19.33,
+          "ssim": 0.811,
+          "latency_ms": 18.7
+        },
+        "abyssal": {
+          "uiqm": 1.76,
+          "uciqe": 0.433,
+          "psnr": 19.62,
+          "ssim": 0.792,
+          "latency_ms": 18.8
+        }
+      }
+    },
+    {
+      "id": "uieb",
+      "name": "AquaVision-UIEB Baseline",
+      "dataset_trained": "UIEB (890 pairs)",
+      "domain": "Coastal Waters & Blue Casts",
+      "is_dl": true,
+      "checkpoint": "model.pth",
+      "mean_uiqm": 1.55,
+      "mean_uciqe": 1.0,
+      "mean_psnr": 15.26,
+      "mean_ssim": 0.798,
+      "latency_ms": 420.7,
+      "fps": 2.4,
+      "params_million": 22.18,
+      "domain_breakdown": {
+        "coastal": {
+          "uiqm": 1.285,
+          "uciqe": 1.0,
+          "psnr": 14.05,
+          "ssim": 0.833,
+          "latency_ms": 793.5
+        },
+        "reefs": {
+          "uiqm": 1.673,
+          "uciqe": 1.0,
+          "psnr": 16.46,
+          "ssim": 0.786,
+          "latency_ms": 47.6
+        },
+        "abyssal": {
+          "uiqm": 1.956,
+          "uciqe": 1.0,
+          "psnr": 16.47,
+          "ssim": 0.742,
+          "latency_ms": 48.2
+        }
+      }
+    },
+    {
+      "id": "lsui",
+      "name": "AquaVision-LSUI Reefs",
+      "dataset_trained": "LSUI (4,279 pairs)",
+      "domain": "Turbid & Benthic Coral Reefs",
+      "is_dl": true,
+      "checkpoint": "model_lsui.pth",
+      "mean_uiqm": 1.447,
+      "mean_uciqe": 0.733,
+      "mean_psnr": 10.07,
+      "mean_ssim": 0.684,
+      "latency_ms": 51.4,
+      "fps": 19.5,
+      "params_million": 22.18,
+      "domain_breakdown": {
+        "coastal": {
+          "uiqm": 1.332,
+          "uciqe": 0.808,
+          "psnr": 9.7,
+          "ssim": 0.689,
+          "latency_ms": 44.4
+        },
+        "reefs": {
+          "uiqm": 1.583,
+          "uciqe": 0.637,
+          "psnr": 10.29,
+          "ssim": 0.685,
+          "latency_ms": 63.4
+        },
+        "abyssal": {
+          "uiqm": 1.54,
+          "uciqe": 0.68,
+          "psnr": 10.59,
+          "ssim": 0.675,
+          "latency_ms": 53.1
+        }
+      }
+    },
+    {
+      "id": "euvp",
+      "name": "AquaVision-EUVP Abyssal",
+      "dataset_trained": "EUVP (13,850 pairs)",
+      "domain": "Abyssal Deep & Low-Light",
+      "is_dl": true,
+      "checkpoint": "model_euvp.pth",
+      "mean_uiqm": 1.02,
+      "mean_uciqe": 0.36,
+      "mean_psnr": 15.07,
+      "mean_ssim": 0.861,
+      "latency_ms": 64.6,
+      "fps": 15.5,
+      "params_million": 22.18,
+      "domain_breakdown": {
+        "coastal": {
+          "uiqm": 1.0,
+          "uciqe": 0.337,
+          "psnr": 12.32,
+          "ssim": 0.878,
+          "latency_ms": 56.7
+        },
+        "reefs": {
+          "uiqm": 1.0,
+          "uciqe": 0.386,
+          "psnr": 17.26,
+          "ssim": 0.845,
+          "latency_ms": 69.9
+        },
+        "abyssal": {
+          "uiqm": 1.081,
+          "uciqe": 0.382,
+          "psnr": 18.36,
+          "ssim": 0.844,
+          "latency_ms": 75.1
+        }
+      }
+    },
+    {
+      "id": "combined",
+      "name": "AquaVision-Unified Flagship",
+      "dataset_trained": "Unified (18,929 pairs)",
+      "domain": "All Marine Conditions (Generalist)",
+      "is_dl": true,
+      "checkpoint": "model_combined.pth",
+      "mean_uiqm": 1.115,
+      "mean_uciqe": 0.415,
+      "mean_psnr": 14.06,
+      "mean_ssim": 0.825,
+      "latency_ms": 75.9,
+      "fps": 13.2,
+      "params_million": 22.18,
+      "domain_breakdown": {
+        "coastal": {
+          "uiqm": 1.0,
+          "uciqe": 0.402,
+          "psnr": 11.95,
+          "ssim": 0.848,
+          "latency_ms": 73.1
+        },
+        "reefs": {
+          "uiqm": 1.189,
+          "uciqe": 0.43,
+          "psnr": 16.12,
+          "ssim": 0.805,
+          "latency_ms": 76.5
+        },
+        "abyssal": {
+          "uiqm": 1.272,
+          "uciqe": 0.427,
+          "psnr": 16.22,
+          "ssim": 0.798,
+          "latency_ms": 80.7
+        }
+      }
+    }
+  ]
+}

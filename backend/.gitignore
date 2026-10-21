@@ -37,17 +37,33 @@ uploads/*
 !uploads/.gitkeep
 outputs/*
 !outputs/.gitkeep
+*.zip
+*.tar.gz
+*.pdf
+*.mp4
+*.avi
+*.mov
+*.webm
 
-# Weights (ignore large checkpoint backup files)
+# Weights (ignore large checkpoint backup files and extra checkpoints)
+*.pt
+yolov8n.pt
 weights/*.pt
+weights/*.pth
 weights/*.onnx
 weights/model_backup_latest.pth
+weights/backups/
 !weights/.gitkeep
 !weights/model.pth
 
 # Dataset images
 dataset/**
 !dataset/**/.gitkeep
+dataset/lsui/**
+dataset/euvp/**
+dataset/UIEB/**
+dataset/uieb/**
+backend/dataset/**
 
 # IDE & OS
 .vscode/

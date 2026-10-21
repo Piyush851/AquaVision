@@ -57,9 +57,14 @@ export default function HistorySection({
               </div>
 
               <div className="flex items-center justify-between p-2">
-                <span className="text-[11px] font-mono text-zinc-400 truncate max-w-[80px]">
+                <span className="text-[11px] font-mono text-zinc-400 truncate max-w-[70px]">
                   #{item.id}
                 </span>
+                {item.detections && item.detections.length > 0 && (
+                  <span className="rounded bg-cyan-950/80 px-1 py-0.2 text-[9px] text-cyan-300 font-mono border border-cyan-800/50">
+                    {item.detections.length} org
+                  </span>
+                )}
                 <ArrowRight className="h-3 w-3 text-zinc-600 group-hover:text-cyan-400 transition-colors" />
               </div>
             </button>

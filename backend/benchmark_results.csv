@@ -1,0 +1,6 @@
+Method / Checkpoint,Training Dataset,Target Marine Domain,UIQM (Higher Better),UCIQE (Higher Better),PSNR (dB),SSIM,Latency (ms),Throughput (FPS),Parameters (M)
+Classical CV Fallback,None (Rule-based),Rule-based Optical Physics,1.552,0.401,16.5,0.807,89.2,11.2,0.0
+AquaVision-UIEB Baseline,UIEB (890 pairs),Coastal Waters & Blue Casts,1.55,1.0,15.26,0.798,420.7,2.4,22.18
+AquaVision-LSUI Reefs,"LSUI (4,279 pairs)",Turbid & Benthic Coral Reefs,1.447,0.733,10.07,0.684,51.4,19.5,22.18
+AquaVision-EUVP Abyssal,"EUVP (13,850 pairs)",Abyssal Deep & Low-Light,1.02,0.36,15.07,0.861,64.6,15.5,22.18
+AquaVision-Unified Flagship,"Unified (18,929 pairs)",All Marine Conditions (Generalist),1.115,0.415,14.06,0.825,75.9,13.2,22.18

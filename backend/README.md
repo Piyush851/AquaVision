@@ -75,25 +75,14 @@ python app/main.py
 
 ---
 
-## 📊 Dataset: Underwater Image Enhancement Benchmark (UIEB)
+## 📊 Supported Datasets
 
-AquaVision is trained on the standard **UIEB** dataset:
-- **Total Paired Samples**: 890 real-world underwater images with paired reference ground-truths.
-- **Degradation Profiles**: Green/blue color casts, severe turbidity, haze, and low-light backscatter.
+AquaVision supports multi-dataset training across three benchmark corpora:
+- **UIEB (Underwater Image Enhancement Benchmark)**: 890 real-world paired underwater images located in `dataset/train/`, `dataset/val/`, `dataset/test/`.
+- **LSUI (Large-Scale Underwater Image Dataset)**: 4,279 paired high-resolution images in `dataset/lsui/` (`input/` and `GT/`).
+- **EUVP (Enhancement of Underwater Visual Perception)**: Over 11,400 paired images in `dataset/euvp/Paired/` (`underwater_scenes`, `underwater_dark`, `underwater_imagenet`).
 
-### Dataset Directory Setup
-```
-backend/dataset/
-├── train/
-│   ├── raw/           # Place raw input training images here
-│   └── reference/     # Place corresponding ground truth images here
-├── val/
-│   ├── raw/
-│   └── reference/
-└── test/
-    ├── raw/
-    └── reference/
-```
+> Note: All raw and reference dataset images are ignored from git version control via `.gitignore`.
 
 ---
 
@@ -106,10 +95,20 @@ backend/dataset/
 
 ### Training the Model
 ```bash
-python training/train.py --dataset dataset/train --val dataset/val --epochs 25 --batch-size 8 --lr 0.0001
+# 1. Train on UIEB (Default) -> outputs weights/model.pth
+python training/train.py --dataset uieb --epochs 25 --batch-size 8 --lr 0.0001
+
+# 2. Train on LSUI (4,279 pairs) -> outputs weights/model_lsui.pth
+python training/train.py --dataset lsui --epochs 20 --batch-size 8 --lr 0.0001
+
+# 3. Train on EUVP (11,400+ pairs) -> outputs weights/model_euvp.pth
+python training/train.py --dataset euvp --epochs 20 --batch-size 8 --lr 0.0001
+
+# 4. Train Combined Super-Corpus (UIEB + LSUI + EUVP) -> outputs weights/model_combined.pth
+python training/train.py --dataset all --epochs 30 --batch-size 16 --lr 0.0001
 ```
 
-Checkpoints are saved automatically to `weights/model.pth`.
+Checkpoints are saved automatically to `weights/`.
 
 ---
 

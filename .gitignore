@@ -7,6 +7,10 @@
 !backend/.env.example
 !frontend/.env.example
 
+# AI Agent Context Instructions
+AGENTS.md
+.agents/
+
 # Python
 __pycache__/
 *.py[cod]
@@ -46,8 +50,25 @@ backend/uploads/*
 !backend/uploads/.gitkeep
 backend/outputs/*
 !backend/outputs/.gitkeep
+*.zip
+*.tar.gz
+*.pdf
+*.mp4
+*.avi
+*.mov
+*.webm
 backend/dataset/**
 !backend/dataset/**/.gitkeep
+backend/dataset/lsui/**
+backend/dataset/euvp/**
+backend/dataset/UIEB/**
+backend/dataset/uieb/**
+dataset/**
+!dataset/**/.gitkeep
+dataset/lsui/**
+dataset/euvp/**
+dataset/UIEB/**
+dataset/uieb/**
 
 # Temporary, Scratch & Test files
 temp.py

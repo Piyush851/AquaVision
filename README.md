@@ -1,314 +1,271 @@
-# 🌊 AquaVision — Underwater Image Enhancement (UWIE) System
+# 🌊 AquaVision AI — Deep Learning Underwater Image Enhancement & Marine Scene Analysis System
 
 <p align="center">
-  <img src="frontend/public/samples/sample-1.png" alt="AquaVision Banner" width="600" style="border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.3);" />
+  <img src="frontend/public/samples/sample-1.png" alt="AquaVision AI Banner" width="650" style="border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.35);" />
 </p>
 
 <p align="center">
-  <b>A deep learning & computer vision platform designed to restore color degradation, wavelength attenuation, haze, and contrast loss in underwater imagery.</b>
+  <b>A comprehensive AI platform for optical underwater restoration, subsea video anti-flicker enhancement, marine biological species detection (YOLOv8), coral reef bleaching assessment, and automated engineering inspection reports.</b>
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/PyTorch-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white" alt="PyTorch" />
-  <img src="https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI" />
-  <img src="https://img.shields.io/badge/Next.js%2015-000000?style=for-the-badge&logo=nextdotjs&logoColor=white" alt="Next.js" />
-  <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/PyTorch-2.6.0-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white" alt="PyTorch" />
+  <img src="https://img.shields.io/badge/CUDA-12.8-76B900?style=for-the-badge&logo=nvidia&logoColor=white" alt="CUDA" />
+  <img src="https://img.shields.io/badge/YOLOv8-Ultralytics-00ffff?style=for-the-badge" alt="YOLOv8" />
+  <img src="https://img.shields.io/badge/FastAPI-0.115-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI" />
+  <img src="https://img.shields.io/badge/Next.js-16-000000?style=for-the-badge&logo=nextdotjs&logoColor=white" alt="Next.js" />
+  <img src="https://img.shields.io/badge/TypeScript-5.0-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
   <img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="License" />
 </p>
 
 ---
 
 ## 📌 Table of Contents
-1. [Overview](#-overview)
-2. [Key Features](#-key-features)
-3. [System Architecture](#-system-architecture)
-4. [Dataset & Benchmark](#-dataset--benchmark)
-5. [Model Architecture & Training](#-model-architecture--training)
-6. [Project Structure](#-project-structure)
-7. [Installation & Setup](#-installation--setup)
-   - [Prerequisites](#prerequisites)
-   - [Backend Setup (FastAPI & PyTorch)](#1-backend-setup-fastapi--pytorch)
-   - [Frontend Setup (Next.js 15 & React)](#2-frontend-setup-nextjs-15--react)
-8. [Environment Variables](#-environment-variables)
+1. [Executive Overview](#-executive-overview)
+2. [Key Capabilities & Innovations](#-key-capabilities--innovations)
+3. [Optical Physics Degradation Model](#-optical-physics-degradation-model)
+4. [Multi-Dataset Inventory](#-multi-dataset-inventory)
+5. [Model Architecture & Checkpoints](#-model-architecture--checkpoints)
+6. [System Architecture](#-system-architecture)
+7. [Installation & Quickstart](#-installation--quickstart)
+   - [Hardware & Software Prerequisites](#prerequisites)
+   - [Backend Setup (FastAPI & PyTorch)](#1-backend-setup)
+   - [Frontend Setup (Next.js & React)](#2-frontend-setup)
+8. [Usage Guide](#-usage-guide)
 9. [API Reference](#-api-reference)
-10. [Evaluation Metrics](#-evaluation-metrics)
-11. [License](#-license)
+10. [Scientific Evaluation Metrology](#-scientific-evaluation-metrology)
+11. [Academic Attribution & Team](#-academic-attribution--team)
 
 ---
 
-## 🔍 Overview
+## 🔍 Executive Overview
 
-Light traveling through water experiences exponential attenuation and scattering due to suspended particles and wavelength-dependent absorption (red light diminishes within 3–5 meters, causing characteristic green-blue casts). 
+Light propagating through underwater environments undergoes severe exponential wavelength attenuation and scattering:
+- **Red Wavelength Absorption**: Red light (650–700 nm) is completely absorbed within 3–5 meters of depth, leading to strong greenish-cyan color casts.
+- **Forward & Backward Scattering**: Floating organic particles ("marine snow") scatter ambient illumination into random angles, reducing contrast and producing veiling glare.
 
-**AquaVision** solves this degradation through a hybrid approach combining:
-1. **AquaVisionNet**: A multi-scale **Residual U-Net** augmented with **Squeeze-and-Excitation (SE) Channel Attention** to dynamically recalibrate color channels.
-2. **Classical Pre/Post-processing Fallbacks**: Gray-World White Balance and Contrast Limited Adaptive Histogram Equalization (CLAHE) in the LAB color space.
-3. **Real-Time Interactive UI**: A modern Next.js 15 client providing split-screen comparison, live non-reference image quality metrics (UIQM, UCIQE, PSNR), and image history.
+**AquaVision AI** resolves these optical degradations through a hybrid computer vision and deep learning platform featuring:
+- **AquaVisionNet**: Residual Attention U-Net with Squeeze-and-Excitation (SE) channel recalibration.
+- **Guided Bilateral Upsampling**: Edge-preserving high-resolution processing (1080p/4K) without memory exhaustion.
+- **Marine Biological Intelligence**: Real-time YOLOv8 taxonomy bounding boxes and CIELAB coral bleaching health indexes.
+- **Subsea Video Pipeline**: Exponential Moving Average (EMA) anti-flicker temporal stabilization.
+- **Batch Survey & Reporting**: Automated multi-page PDF Marine Inspection Reports with faculty supervisor sign-off blocks.
 
 ---
 
-## ✨ Key Features
+## ✨ Key Capabilities & Innovations
 
-- **🚀 Neural Underwater Enhancement**: Residual Attention U-Net restoring realistic color vibrancy and structural clarity.
-- **⚡ Fast Inference**: CUDA GPU acceleration with automatic CPU fallback.
-- **🛡️ Robust Fail-Safe Pipeline**: Classical CV fallback guarantees output even in cold-start scenarios or corrupted weight states.
-- **🎛️ Interactive Comparison Slider**: Real-time before/after slider with zoom, pan, and split-view modes.
-- **📊 Scientific Quality Metrics**: Evaluates enhanced images using **PSNR**, **UIQM** (Underwater Image Quality Measure), and **UCIQE** (Underwater Color Image Quality Evaluation).
-- **📂 Sample Presets & Session History**: Test instantly with preset underwater samples and browse historical enhancement runs.
-- **📝 Project Synopsis Modal**: Built-in architecture overview, methodology details, and dataset information directly accessible in the web app.
+- **🚀 Deep Learning Optical Restoration**: Residual Attention U-Net trained on 19,000+ real and synthesized marine image pairs.
+- **🛡️ Zero-Downtime Classical Fallback**: Gray-World White Balance + CLAHE in LAB space for instant execution if GPU/weights are absent.
+- **🎯 YOLOv8 Marine Bio-Intelligence**: Automated detection and classification of marine fauna (fish, turtles, sharks), corals, divers, and marine debris with high-tech HUD overlays.
+- **🪸 Coral Reef Bleaching Metrology**: CIELAB/HSV colorimetric analysis computing Bleaching Index (0.0 to 1.0), benthic coverage, algal overgrowth, and scientific survey advisories.
+- **🎬 Subsea Video Anti-Flicker Processing**: Temporal EMA smoothing ($I_t' = (1-\alpha)\hat{I}_t + \alpha I_{t-1}'$) that eliminates frame flickering in underwater video streams.
+- **📦 Batch Survey & ZIP Packaging**: Drag-and-drop batch queue, processing telemetry, and one-click ZIP exports containing enhanced images, annotated HUD frames, and JSON metadata.
+- **📄 Official Marine Inspection PDF Reports**: Automated ReportLab PDF generator containing side-by-side photographic evidence, quantitative metrics tables, and formal engineering verification blocks.
+- **📊 Quantitative Benchmark Suite**: Automated evaluation across UIEB, LSUI, and EUVP with real-time UI charts, CSV exports, and publication-ready LaTeX tables.
+- **🔄 Dynamic Checkpoint Switcher**: Live switching between specialized checkpoints (`model.pth`, `model_lsui.pth`, `model_euvp.pth`, `model_combined.pth`).
+
+---
+
+## 🌊 Optical Physics Degradation Model
+
+Underwater image formation follows the Jaffe-McGlamery optical model:
+
+$$E(x, \lambda) = J(x, \lambda) \cdot t(x, \lambda) + B_\infty(\lambda) \cdot (1 - t(x, \lambda))$$
+
+Where:
+- $J(x, \lambda)$ represents the true, unattenuated scene radiance.
+- $t(x, \lambda) = e^{-\beta(\lambda) d(x)}$ represents the wavelength-dependent transmission map across distance $d(x)$.
+- $B_\infty(\lambda)$ is the background veiling waterlight.
+- $\beta(\lambda) = a(\lambda) + b(\lambda)$ is the total attenuation coefficient (absorption + scattering).
+
+AquaVisionNet learns to invert this non-linear function by dynamically recalibrating color channels and restoring structural contrast.
+
+---
+
+## 📊 Multi-Dataset Inventory
+
+AquaVision supports multi-dataset training and evaluation across 19,019 underwater image pairs:
+
+| Dataset | Image Pairs | Domain & Environmental Scope | Output Weights |
+| :--- | :--- | :--- | :--- |
+| **UIEB** | 800 Train / 90 Val | Diverse coastal and blue deep-sea waters with volunteer ground truths | `weights/model.pth` |
+| **LSUI** | 3,851 Train / 428 Val | Turbid, green-tinted, benthic coral reef ecosystems | `weights/model_lsui.pth` |
+| **EUVP** | 12,465 Train / 1,385 Val | ROV abyssal explorations, dark waters, ImageNet underwater subsets | `weights/model_euvp.pth` |
+| **AquaVision-Unified** | **19,019 Combined Pairs** | All marine water types and lighting conditions | `weights/model_combined.pth` |
+
+*Note: All raw/ground-truth dataset images in `backend/dataset/` are excluded from Git via `.gitignore`.*
+
+---
+
+## 🧠 Model Architecture & Checkpoints
+
+### 1. AquaVisionNet Architecture
+- **Input / Output**: $256 \times 256 \times 3$ RGB tensor normalized to $[-1, 1]$.
+- **Encoder**: 4 downsampling stages with Residual blocks and **Squeeze-and-Excitation (SE)** modules that reweight channel contributions based on global receptive fields.
+- **Bottleneck**: Deep residual attention blocks capturing multi-scale context.
+- **Decoder**: 4 upsampling stages with skip connections restoring spatial edge details and high-frequency textures.
+- **Loss Function**: Hybrid combination of $L_1$ pixel loss, Mean Squared Error (MSE), and Structural Similarity (SSIM):
+  $$\mathcal{L}_{\text{total}} = 0.5 \cdot \mathcal{L}_{1} + 0.2 \cdot \mathcal{L}_{\text{MSE}} + 0.3 \cdot (1 - \text{SSIM})$$
+
+### 2. Guided Bilateral Upsampling (High-Resolution Pipeline)
+To process 1080p and 4K images on hardware with 4 GB VRAM:
+1. Low-resolution tensor ($256 \times 256$) is enhanced via AquaVisionNet.
+2. Color chrominance channels are upscaled via Lanczos-4 interpolation.
+3. Luminance channel is refined by fusing high-pass structural edge gradients extracted from the original high-resolution input, eliminating interpolation ringing.
 
 ---
 
 ## 🏗️ System Architecture
 
 ```
-┌────────────────────────────────────────────────────────┐
-│                   Next.js 15 Client                    │
-│   (Upload Component, Interactive Split Slider, Metrics)│
-└───────────────────────────┬────────────────────────────┘
-                            │ HTTP Multipart POST / REST
-                            ▼
-┌────────────────────────────────────────────────────────┐
-│                  FastAPI Backend Server                │
-│    (/api/v1/enhance/upload, /history, /info, /health)  │
-└───────────────────────────┬────────────────────────────┘
-                            │
-              ┌─────────────┴─────────────┐
-              ▼                           ▼
-   ┌───────────────────────┐   ┌───────────────────────┐
-   │    AquaVisionNet      │   │  Classical CV Engine  │
-   │ Residual U-Net + SE   │   │  CLAHE + White Balance│
-   │ (Deep Learning Model) │   │  (Fail-safe Fallback) │
-   └───────────────────────┘   └───────────────────────┘
+┌────────────────────────────────────────────────────────────────────────┐
+│                   Next.js 16 Client (React & Tailwind)                 │
+│  [Single Image]  |  [Subsea Video (EMA)]  |  [Batch Survey Processing]  │
+│  - Split Slider Viewer       - Anti-Flicker GPU       - ZIP Archive    │
+│  - Biological HUD Toggle     - Side-by-Side Video     - Survey PDF     │
+│  - Checkpoint Switcher       - Benchmark Modal        - System Specs   │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │ HTTP Multipart / JSON REST
+                                    ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│                        FastAPI Backend Server                          │
+│  (/upload, /video, /batch, /batch/zip, /batch/report, /models, /detect) │
+└─────────────────┬───────────────────┬───────────────────┬──────────────┘
+                  │                   │                   │
+                  ▼                   ▼                   ▼
+        ┌──────────────────┐ ┌──────────────────┐ ┌──────────────┐
+        │  AquaVisionNet   │ │  YOLOv8 Marine   │ │  ReportLab   │
+        │ Residual Attention│ │  Detector & Coral│ │  Inspection │
+        │  U-Net (PyTorch) │ │ Health Analyzer  │ │ PDF Generator│
+        └──────────────────┘ └──────────────────┘ └──────────────┘
 ```
 
 ---
 
-## 📊 Dataset & Benchmark
-
-AquaVision is trained and benchmarked on the **UIEB (Underwater Image Enhancement Benchmark)** dataset:
-
-- **Dataset Name**: Underwater Image Enhancement Benchmark (UIEB)
-- **Source**: [UIEB Official Repository / Paper](https://li-chongyi.github.io/proj_benchmark.html)
-- **Content**: 890 paired real-world underwater images captured under diverse oceanic conditions (greenish water, blue haze, low light, deep ocean), paired with high-quality reference ground truths selected by 500+ volunteer evaluations.
-- **Data Splitting**:
-  - `backend/dataset/train/`: 80% paired samples for neural training (`raw/` and `reference/`).
-  - `backend/dataset/val/`: 10% validation images for loss convergence & validation PSNR.
-  - `backend/dataset/test/`: 10% test set for qualitative and quantitative benchmarking.
-
-### Dataset Directory Format:
-```
-backend/dataset/
-├── train/
-│   ├── raw/           # Raw degraded underwater images
-│   └── reference/     # Corresponding reference ground truth images
-├── val/
-│   ├── raw/
-│   └── reference/
-└── test/
-    ├── raw/
-    └── reference/
-```
-
----
-
-## 🧠 Model Architecture & Training
-
-### Architecture Highlights
-- **Encoder**: 4 downsampling convolutional stages with Residual blocks and **Squeeze-and-Excitation (SE)** attention modules to reweight red/green/blue channels dynamically.
-- **Bottleneck**: Deep residual attention blocks capturing multi-scale context.
-- **Decoder**: 4 upsampling stages with skip connections restoring spatial resolution and high-frequency edge details.
-- **Loss Function**: Hybrid combination of $L_1$ pixel loss, Mean Squared Error (MSE), and Structural Similarity Index (SSIM):
-  $$\mathcal{L}_{\text{total}} = \alpha \mathcal{L}_{1} + \beta \mathcal{L}_{\text{MSE}} + \gamma (1 - \text{SSIM})$$
-
-### Training Command
-```bash
-cd backend
-python training/train.py --dataset dataset/train --val dataset/val --epochs 25 --batch-size 8 --lr 0.0001
-```
-
-Checkpoints are automatically saved to `backend/weights/model.pth`.
-
----
-
-## 📁 Project Structure
-
-```
-AquaVision/
-├── backend/
-│   ├── app/
-│   │   ├── main.py                 # FastAPI application entrypoint
-│   │   ├── routes/
-│   │   │   └── enhancement.py      # REST API routes (upload, history, info)
-│   │   ├── model/
-│   │   │   ├── model.py            # AquaVisionNet PyTorch neural network
-│   │   │   └── inference.py        # Model inference & fallback manager
-│   │   └── utils/
-│   │       └── image_processing.py  # CLAHE, White Balance, PSNR, UIQM calculation
-│   ├── dataset/                    # Training/validation/testing data folders
-│   ├── training/
-│   │   └── train.py                # PyTorch training script
-│   ├── weights/
-│   │   └── model.pth               # Model checkpoint weights
-│   ├── uploads/                    # Temporary raw image uploads
-│   ├── outputs/                    # Processed enhanced outputs
-│   ├── requirements.txt            # Python dependencies
-│   ├── .env.example                # Backend environment template
-│   └── README.md                   # Backend documentation
-│
-├── frontend/
-│   ├── src/
-│   │   ├── app/
-│   │   │   ├── layout.tsx          # Root layout & meta tags
-│   │   │   ├── page.tsx            # Main application UI page
-│   │   │   └── globals.css         # Global styling & design system
-│   │   ├── components/
-│   │   │   ├── Navbar.tsx          # Navigation header & system status badge
-│   │   │   ├── ImageUploader.tsx   # Drag-and-drop file upload & sample presets
-│   │   │   ├── ComparisonViewer.tsx# Before/after interactive split slider
-│   │   │   ├── MetricsPanel.tsx    # Quality metrics (PSNR, UIQM, UCIQE, time)
-│   │   │   ├── HistorySection.tsx  # Recent enhancement history gallery
-│   │   │   ├── SynopsisModal.tsx   # Project synopsis & technical documentation
-│   │   │   └── Footer.tsx          # Application footer
-│   │   └── lib/
-│   │       ├── api.ts              # API client for backend communication
-│   │       └── types.ts            # TypeScript interfaces
-│   ├── public/                     # Static assets and sample underwater images
-│   ├── package.json                # Frontend dependencies & scripts
-│   ├── .env.example                # Frontend environment template
-│   └── README.md                   # Frontend documentation
-│
-├── .gitignore                      # Git exclusion rules
-└── README.md                       # Project overview & documentation
-```
-
----
-
-## 🚀 Installation & Setup
+## 🚀 Installation & Quickstart
 
 ### Prerequisites
-- **Python 3.9+**
-- **Node.js 18+** & **npm**
-- **CUDA Toolkit** (Optional, for GPU acceleration)
+- **Operating System**: Windows 10/11, Ubuntu 20.04+, or macOS
+- **Python**: 3.10+ (Recommended: PyTorch 2.6 with CUDA support)
+- **Node.js**: 18.0+ & **npm**
+- **GPU (Optional)**: NVIDIA GPU with CUDA 12+ (e.g., NVIDIA GeForce RTX 3050 Laptop GPU, 4 GB VRAM)
 
 ---
 
-### 1. Backend Setup (FastAPI & PyTorch)
+### 1. Backend Setup
 
 ```bash
-# 1. Navigate to backend
-cd backend
+# 1. Clone the repository
+git clone https://github.com/Piyush851/AquaVision.git
+cd AquaVision/backend
 
-# 2. Create and activate a virtual environment
+# 2. Create and activate virtual environment
 python -m venv venv
 
-# On Windows:
+# Windows:
 venv\Scripts\activate
-# On Linux/macOS:
+# Linux/macOS:
 source venv/bin/activate
 
-# 3. Install Python dependencies
+# 3. Install dependencies
 pip install -r requirements.txt
 
-# 4. Configure environment
-cp .env.example .env
-
-# 5. Start the backend server
+# 4. Start the FastAPI server
 python app/main.py
 ```
-
-The backend server runs at **`http://localhost:8000`**.
-- Swagger UI Documentation: [http://localhost:8000/docs](http://localhost:8000/docs)
-- Health Check: [http://localhost:8000/health](http://localhost:8000/health)
+Backend runs at **`http://localhost:8000`** (Swagger docs: `http://localhost:8000/docs`).
 
 ---
 
-### 2. Frontend Setup (Next.js 15 & React)
+### 2. Frontend Setup
 
 ```bash
-# 1. Open a new terminal and navigate to frontend
-cd frontend
+# 1. Navigate to frontend directory
+cd ../frontend
 
-# 2. Install Node dependencies
+# 2. Install dependencies
 npm install
 
-# 3. Configure environment
-cp .env.example .env.local
-
-# 4. Start Next.js development server
+# 3. Start development server
 npm run dev
 ```
-
-Open **`http://localhost:3000`** in your browser to interact with AquaVision.
+Open **`http://localhost:3000`** in your browser.
 
 ---
 
-## ⚙️ Environment Variables
+## 💻 Usage Guide
 
-### Backend (`backend/.env`)
-| Variable | Default | Description |
-|---|---|---|
-| `HOST` | `0.0.0.0` | Host IP address for Uvicorn |
-| `PORT` | `8000` | Port for FastAPI backend |
-| `DEBUG` | `True` | Enable debug logs |
-| `UPLOAD_DIR` | `uploads` | Directory for uploaded raw images |
-| `OUTPUT_DIR` | `outputs` | Directory for enhanced output images |
-| `WEIGHTS_PATH` | `weights/model.pth` | Path to trained model weights |
-| `ALLOWED_ORIGINS` | `http://localhost:3000` | Allowed CORS origins (comma-separated) |
-| `DEVICE` | `auto` | Execution device (`auto`, `cuda`, `cpu`) |
+### 1. Single Image Restoration
+- Upload any underwater photograph or click one of the 4 benchmark presets.
+- Drag the **split-screen slider** to inspect before/after color restoration and contrast recovery.
+- Click **"Biological Overlay"** to view real-time YOLOv8 bounding boxes and coral reef health tags.
+- Click **"Generate PDF Report"** to download an engineering inspection report.
 
-### Frontend (`frontend/.env.local`)
-| Variable | Default | Description |
-|---|---|---|
-| `NEXT_PUBLIC_API_URL` | `http://localhost:8000` | Base URL of the FastAPI backend server |
+### 2. Subsea Video Enhancement
+- Select the **"Subsea Video Enhancement"** tab.
+- Drag and drop a subsea video file (`.mp4`, `.mov`, `.avi`, `.webm` up to 50 MB).
+- Toggle side-by-side composite mode and click **"Enhance Subsea Video"**.
+
+### 3. Batch Survey Processing
+- Select the **"Batch Survey Processing"** tab.
+- Drop multiple images or click **"+ Load 4 Benchmark Samples"**.
+- Click **"Run Batch Pipeline"**.
+- View aggregate statistics (mean PSNR gain, UIQM, organism count) and download a single **ZIP Archive** or **Official Survey PDF**.
+
+### 4. Dynamic Model Switching
+- Click the **"Model"** button in the navigation header.
+- Switch between `model_combined.pth` (Unified), `model_lsui.pth` (Turbid reefs), `model_euvp.pth` (Abyssal), and `model.pth` (UIEB).
 
 ---
 
 ## 🔌 API Reference
 
-### 1. Upload & Enhance Image
-`POST /api/v1/enhance/upload`
-
-**Request:** `multipart/form-data` with key `file` (JPEG, PNG, WEBP).
-
-**Response (200 OK):**
-```json
-{
-  "id": "c604d573",
-  "filename": "underwater_sample.png",
-  "raw_url": "/uploads/c604d573_raw.png",
-  "enhanced_url": "/outputs/c604d573_enhanced.png",
-  "timestamp": 1725350400.0,
-  "metadata": {
-    "method": "AquaVision Deep Learning Neural Network",
-    "device": "cuda",
-    "original_resolution": "640x480",
-    "estimated_psnr": 27.82,
-    "uiqm": 3.42,
-    "uciqe": 0.61,
-    "model_checkpoint_active": true,
-    "processing_time_seconds": 0.084
-  }
-}
-```
-
-### 2. Enhancement History
-`GET /api/v1/enhance/history`
-- Returns recent enhancement sessions for the gallery feed.
-
-### 3. Backend & Device Info
-`GET /api/v1/enhance/info`
-- Returns GPU device state, CUDA availability, and loaded model weight information.
+| Endpoint | Method | Description |
+| :--- | :---: | :--- |
+| `/api/v1/enhance/upload` | `POST` | Upload and enhance single image (`multipart/form-data`) |
+| `/api/v1/enhance/detect/{file_id}` | `POST` | Run YOLOv8 marine detection & coral bleaching analysis |
+| `/api/v1/enhance/report/{file_id}` | `POST` | Generate individual formal engineering PDF report |
+| `/api/v1/enhance/video` | `POST` | Process subsea video with temporal anti-flicker EMA |
+| `/api/v1/enhance/batch` | `POST` | Batch process multiple frames with metrics & biological detection |
+| `/api/v1/enhance/batch/zip` | `POST` | Download structured ZIP package (enhanced, HUD, metadata JSON) |
+| `/api/v1/enhance/batch/report` | `POST` | Generate official multi-page Marine Survey PDF report |
+| `/api/v1/enhance/models` | `GET` | List available model checkpoints and active weights |
+| `/api/v1/enhance/switch-model` | `POST` | Hot-swap active neural network checkpoint |
+| `/api/v1/enhance/benchmark` | `GET` | Retrieve quantitative benchmark metrology results |
+| `/api/v1/enhance/benchmark/export/csv` | `GET` | Export benchmark comparison matrix as CSV |
+| `/api/v1/enhance/benchmark/export/latex`| `GET` | Export publication-ready LaTeX table |
 
 ---
 
-## 📈 Evaluation Metrics
+## 📈 Scientific Evaluation Metrology
 
-AquaVision evaluates enhancement quality using industry-standard full-reference and no-reference benchmarks:
+AquaVision employs both full-reference and no-reference optical quality metrics:
 
-1. **PSNR (Peak Signal-to-Noise Ratio)**: Measures pixel-level fidelity against ground-truth reference images (higher is better, typically >25 dB).
-2. **UIQM (Underwater Image Quality Measure)**: Linear combination of underwater colorfulness (UICM), sharpness (UISM), and contrast (UIConM).
-3. **UCIQE (Underwater Color Image Quality Evaluation)**: Evaluates color cast, saturation, and contrast in CIELAB color space.
+1. **PSNR (Peak Signal-to-Noise Ratio)**:
+   $$\text{PSNR} = 10 \cdot \log_{10}\left(\frac{\text{MAX}_I^2}{\text{MSE}}\right)$$
+2. **SSIM (Structural Similarity Index)**: Evaluates luminance, contrast, and structural preservation.
+3. **UIQM (Underwater Image Quality Measure)**:
+   $$\text{UIQM} = c_1 \cdot \text{UICM} + c_2 \cdot \text{UISM} + c_3 \cdot \text{UIConM}$$
+   *(UICM: Colorfulness, UISM: Sharpness, UIConM: Contrast)*
+4. **UCIQE (Underwater Color Image Quality Evaluation)**:
+   $$\text{UCIQE} = c_1 \cdot \sigma_c + c_2 \cdot \text{con}_l + c_3 \cdot \mu_s$$
+   *(Chroma standard deviation, luminance contrast, saturation mean)*
+
+---
+
+## 👥 Academic Attribution & Team
+
+### Engineering College, Ajmer (Bikaner Technical University)
+**Department of Information Technology — Final Year Project (2026–2027)**  
+**Project Supervisor:** Mrs. Bhanupriya Sharma (Assistant Professor, Dept. of CSE & IT)
+
+| Team Member | Roll Number | Role Focus & Primary Responsibilities |
+| :--- | :--- | :--- |
+| **Piyush Saini** | `23EEAIT043` | **Role 2: Team Lead & Computer Vision Specialist / Optical Engineer**<br/>• Guided bilateral upsampling (high-res edge preservation)<br/>• Non-reference optical metrics (UIQM, UCIQE, PSNR)<br/>• Subsea video anti-flicker EMA pipeline<br/>• Automated Marine PDF Inspection Report Generator<br/>• Multi-dataset training execution & Batch Processor |
+| **Piyush Balundiya** | `23EEAIT042` | **Role 1: Core ML Architect & Model Engineer**<br/>• AquaVisionNet (Residual Attention U-Net + SE Attention)<br/>• YOLOv8 Marine species object detector<br/>• Coral reef bleaching/health classifier<br/>• Model export: ONNX Runtime & TorchScript |
+| **Kumkum Dadhich** | `23EEAIT039` | **Role 3: MLOps Engineer & Dataset Specialist**<br/>• Data augmentation pipelines (Albumentations)<br/>• Benchmark evaluation scripts & comparative CSV logs<br/>• Ingestion of UIEB, LSUI, and EUVP datasets |
+| **Vishwas Sharma** | `23EEAIT049` | **Role 4: REST API & Backend Systems Engineer**<br/>• Asynchronous FastAPI endpoints & CORS configuration<br/>• Docker containerization & API reliability |
 
 ---
 

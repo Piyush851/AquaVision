@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, DragEvent, ChangeEvent } from "react";
-import { UploadCloud, Image as ImageIcon, Sliders, Check, Sparkles } from "lucide-react";
+import { UploadCloud, Sliders, Check, Sparkles } from "lucide-react";
 import { loadSampleAsFile } from "@/lib/api";
 
 const SAMPLE_PRESETS = [
