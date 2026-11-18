@@ -1,0 +1,11 @@
+# Ruff configuration for AquaVision
+target-version = "py311"
+line-length = 120
+
+[lint]
+ignore = [
+    "E501",     # Line too long
+    "E402",     # Module level import not at top of file
+    "B008",     # FastAPI File(...) in route parameter defaults
+    "ASYNC230", # Async file operations using standard open
+]

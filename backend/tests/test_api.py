@@ -2,15 +2,17 @@ import io
 import sys
 import unittest
 from pathlib import Path
+
 from fastapi.testclient import TestClient
 
 backend_root = Path(__file__).resolve().parent.parent
 if str(backend_root) not in sys.path:
     sys.path.insert(0, str(backend_root))
 
-from app.main import app
-from tests.test_helpers import create_synthetic_underwater_image
 import cv2
+from app.main import app
+
+from tests.test_helpers import create_synthetic_underwater_image
 
 
 class TestFastAPIRoutes(unittest.TestCase):

@@ -1,7 +1,9 @@
 import tempfile
 from pathlib import Path
+
 import cv2
 import numpy as np
+
 
 def create_synthetic_underwater_image(width: int = 256, height: int = 256) -> np.ndarray:
     """Generates a synthetic BGR underwater image with characteristic cyan/green color cast."""

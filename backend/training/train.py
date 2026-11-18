@@ -1,17 +1,14 @@
-import os
-import sys
 import argparse
 import random
+import sys
+from pathlib import Path
+
 import cv2
 import numpy as np
 import torch
-import torch.nn as nn
-import torch.optim as optim
-from torch.utils.data import Dataset, DataLoader
-from pathlib import Path
-from typing import Tuple, List, Optional
-
 import torch.nn.functional as F
+from torch import nn, optim
+from torch.utils.data import DataLoader, Dataset
 
 # Add parent directory for module imports
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -65,7 +62,7 @@ class SSIMLoss(nn.Module):
 
 
 
-def discover_pairs(data_dir: Path) -> List[Tuple[Path, Path]]:
+def discover_pairs(data_dir: Path) -> list[tuple[Path, Path]]:
     """
     Automatically discovers paired degraded and ground truth images across multiple dataset conventions:
     1. UIEB: raw/ and reference/
@@ -73,7 +70,7 @@ def discover_pairs(data_dir: Path) -> List[Tuple[Path, Path]]:
     3. EUVP: trainA/ and trainB/ (or Inp/ and GTr/)
     4. EUVP Master: Paired/ folder containing subfolders with trainA/ and trainB/
     """
-    pairs: List[Tuple[Path, Path]] = []
+    pairs: list[tuple[Path, Path]] = []
     data_dir = Path(data_dir)
     
     # 1. Standard UIEB layout: raw/ vs reference/
@@ -141,8 +138,8 @@ class UnderwaterDataset(Dataset):
     def __init__(
         self,
         data_dir: str = "",
-        pairs: Optional[List[Tuple[Path, Path]]] = None,
-        img_size: Tuple[int, int] = (256, 256),
+        pairs: list[tuple[Path, Path]] | None = None,
+        img_size: tuple[int, int] = (256, 256),
         is_train: bool = True
     ):
         self.img_size = img_size
@@ -158,7 +155,7 @@ class UnderwaterDataset(Dataset):
     def __len__(self) -> int:
         return len(self.pairs)
 
-    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor]:
+    def __getitem__(self, idx: int) -> tuple[torch.Tensor, torch.Tensor]:
         raw_path, ref_path = self.pairs[idx]
         
         raw_img = cv2.imread(str(raw_path))
@@ -198,7 +195,7 @@ def load_dataset_pairs(
     val_dir: str = "",
     val_split: float = 0.1,
     seed: int = 42
-) -> Tuple[List[Tuple[Path, Path]], List[Tuple[Path, Path]]]:
+) -> tuple[list[tuple[Path, Path]], list[tuple[Path, Path]]]:
     """
     Loads train and val pairs based on dataset selection:
     - 'uieb': dataset/train vs dataset/val
@@ -308,7 +305,7 @@ def train(
     else:
         use_amp = False
 
-    print(f"=== AquaVisionNet Training Engine ===")
+    print("=== AquaVisionNet Training Engine ===")
     print(f"Dataset Target: {dataset_name.upper()}")
     print(f"Execution Device: {device} | AMP (Mixed Precision): {use_amp}")
     
@@ -359,7 +356,7 @@ def train(
             state_dict = torch.load(ckpt_candidate, map_location=device)
             model.load_state_dict(state_dict)
             print("Successfully loaded model checkpoint. Resuming training...")
-        except Exception as e:
+        except (OSError, RuntimeError, KeyError, ValueError) as e:
             print(f"[Warning] Could not load checkpoint ({e}). Starting fresh.")
             
     l1_loss = nn.L1Loss()

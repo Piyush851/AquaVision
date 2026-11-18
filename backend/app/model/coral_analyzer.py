@@ -7,9 +7,10 @@ Analyzes benthic coral reefs in CIELAB/HSV color space to assess:
 - Ecological Health Classification & Scientific Survey Alerts
 """
 
+from typing import Any
+
 import cv2
 import numpy as np
-from typing import Dict, Any, Tuple, Optional
 
 
 class CoralHealthAnalyzer:
@@ -22,7 +23,7 @@ class CoralHealthAnalyzer:
         self.lum_thresh = high_luminance_threshold
         self.chroma_thresh = low_chroma_threshold
 
-    def analyze_frame(self, img_bgr: np.ndarray) -> Dict[str, Any]:
+    def analyze_frame(self, img_bgr: np.ndarray) -> dict[str, Any]:
         """
         Processes an enhanced underwater image and returns quantitative coral health metrology.
         """

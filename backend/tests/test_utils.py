@@ -1,6 +1,7 @@
 import sys
 import unittest
 from pathlib import Path
+
 import cv2
 import numpy as np
 import torch
@@ -10,13 +11,14 @@ if str(backend_root) not in sys.path:
     sys.path.insert(0, str(backend_root))
 
 from app.utils.image_processing import (
-    apply_white_balance,
     apply_clahe,
+    apply_white_balance,
     calculate_psnr,
-    preprocess_image,
-    postprocess_tensor,
     classical_enhancement,
+    postprocess_tensor,
+    preprocess_image,
 )
+
 from tests.test_helpers import create_synthetic_underwater_image, create_temp_image_file
 
 

@@ -1,24 +1,23 @@
 import time
+from pathlib import Path
+from typing import Any, Optional
+
 import cv2
 import numpy as np
 import torch
-from pathlib import Path
-from typing import Union, Dict, Any, Optional
 
 from app.model.model import AquaVisionNet
 from app.utils.image_processing import (
-    preprocess_image,
-    preprocess_frame,
-    postprocess_tensor,
     apply_clahe,
     apply_white_balance,
-    classical_enhancement,
     calculate_psnr,
-    calculate_uiqm,
     calculate_uciqe,
-    guided_upsample,
+    calculate_uiqm,
     detect_resolution_profile,
-    tiled_patch_inference
+    guided_upsample,
+    postprocess_tensor,
+    preprocess_frame,
+    tiled_patch_inference,
 )
 
 
@@ -29,7 +28,7 @@ class EnhancerInference:
     """
     _instance: Optional["EnhancerInference"] = None
 
-    def __init__(self, weights_path: Optional[str] = None, device_str: str = "auto"):
+    def __init__(self, weights_path: str | None = None, device_str: str = "auto"):
         backend_root = Path(__file__).resolve().parent.parent.parent
         if not weights_path:
             combined_ckpt = backend_root / "weights" / "model_combined.pth"
@@ -59,7 +58,7 @@ class EnhancerInference:
         else:
             self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
             
-        self.model: Optional[AquaVisionNet] = None
+        self.model: AquaVisionNet | None = None
         self.use_fallback: bool = False
         self._load_model()
 
@@ -78,13 +77,13 @@ class EnhancerInference:
             self.model = model
             self.use_fallback = False
             print(f"Loaded AquaVisionNet weights from {self.weights_path} to {self.device}")
-        except Exception as e:
+        except (OSError, RuntimeError, KeyError, ValueError) as e:
             print(f"[Error] Failed to load model weights: {e}. Switching to fallback mode.")
             self.model = None
             self.use_fallback = True
 
     @classmethod
-    def get_instance(cls, weights_path: Optional[str] = None) -> "EnhancerInference":
+    def get_instance(cls, weights_path: str | None = None) -> "EnhancerInference":
         if cls._instance is None:
             cls._instance = cls(weights_path=weights_path)
         return cls._instance
@@ -112,7 +111,7 @@ class EnhancerInference:
         guided_upsample_flag: bool = True,
         return_metrics: bool = True,
         force_classical: bool = False
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Enhances an in-memory BGR frame with GPU acceleration, optional guided upsampling,
         and real-time optical quality metrology (UIQM, UCIQE, estimated PSNR).
@@ -147,7 +146,7 @@ class EnhancerInference:
                         enhanced_bgr = enhanced_low
 
                     mode = "deep-learning (adaptive guided)"
-            except Exception as e:
+            except (OSError, RuntimeError, KeyError, ValueError) as e:
                 print(f"[Inference Error] Neural network inference failed ({e}), falling back to classical CV.")
                 wb = apply_white_balance(raw_bgr)
                 enhanced_bgr = apply_clahe(wb)
@@ -159,7 +158,7 @@ class EnhancerInference:
 
         elapsed_sec = round(time.time() - start_time, 4)
 
-        result: Dict[str, Any] = {
+        result: dict[str, Any] = {
             "enhanced_image": enhanced_bgr,
             "inference_mode": mode,
             "device": str(self.device),
@@ -180,10 +179,10 @@ class EnhancerInference:
     @torch.no_grad()
     def enhance(
         self,
-        image_path: Union[str, Path],
-        output_path: Union[str, Path],
+        image_path: str | Path,
+        output_path: str | Path,
         force_classical: bool = False
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Enhances an underwater image and writes result to output_path.
         Applies edge-guided upsampling and computes real-time optical metrics (UIQM, UCIQE).

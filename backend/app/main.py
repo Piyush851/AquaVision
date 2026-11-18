@@ -1,6 +1,7 @@
 import os
 import sys
 from pathlib import Path
+
 from dotenv import load_dotenv
 
 # Ensure backend root is in sys.path when running `python app/main.py` directly
@@ -66,6 +67,6 @@ async def health_check():
 if __name__ == "__main__":
     import uvicorn
     host = os.getenv("HOST", "0.0.0.0")
-    port = int(os.getenv("PORT", 8000))
+    port = int(os.getenv("PORT", "8000"))
     reload_flag = os.getenv("ENVIRONMENT", "development").lower() == "development"
     uvicorn.run("app.main:app", host=host, port=port, reload=reload_flag)

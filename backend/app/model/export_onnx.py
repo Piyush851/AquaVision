@@ -1,6 +1,7 @@
-import os
 from pathlib import Path
+
 import torch
+
 from app.model.model import AquaVisionNet
 
 

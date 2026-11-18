@@ -1,40 +1,36 @@
 import os
-import io
-import time
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Any
 
-import cv2
 import numpy as np
-
-from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.platypus import (
-    SimpleDocTemplate,
+    HRFlowable,
+    KeepTogether,
     Paragraph,
+    SimpleDocTemplate,
     Spacer,
     Table,
     TableStyle,
-    Image as RLImage,
-    KeepTogether,
-    HRFlowable
 )
+from reportlab.platypus import Image as RLImage
 
 
 def generate_inspection_pdf(
     raw_img_path: str,
     enhanced_img_path: str,
-    metrics: Dict[str, Any],
+    metrics: dict[str, Any],
     output_pdf_path: str,
     operator_name: str = "Piyush Saini (23EEAIT043)",
     project_title: str = "AquaVision AI - Underwater Optical Inspection System",
     supervisor: str = "Mrs. Bhanupriya Sharma (Engineering College Ajmer)",
-    notes: Optional[str] = None,
-    detections: Optional[list] = None,
-    coral_health: Optional[Dict[str, Any]] = None,
-    annotated_img_path: Optional[str] = None
+    notes: str | None = None,
+    detections: list | None = None,
+    coral_health: dict[str, Any] | None = None,
+    annotated_img_path: str | None = None
 ) -> str:
     """
     Generates a professional engineering PDF inspection report for marine/underwater visual data.
@@ -58,7 +54,6 @@ def generate_inspection_pdf(
     # Custom styles
     primary_color = colors.HexColor("#0f172a")
     accent_color = colors.HexColor("#0284c7")
-    success_color = colors.HexColor("#059669")
     neutral_bg = colors.HexColor("#f8fafc")
     border_color = colors.HexColor("#cbd5e1")
 

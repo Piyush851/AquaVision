@@ -1,10 +1,11 @@
-import os
 import time
+from collections.abc import Callable
 from pathlib import Path
-from typing import Optional, Callable, Dict, Any, Generator
+from typing import Any
 
 import cv2
 import numpy as np
+
 from app.model.inference import EnhancerInference
 
 
@@ -17,9 +18,9 @@ class VideoEnhancer:
 
     def __init__(
         self,
-        inference_engine: Optional[EnhancerInference] = None,
+        inference_engine: EnhancerInference | None = None,
         temporal_blend: float = 0.25,
-        target_fps: Optional[int] = None
+        target_fps: int | None = None
     ):
         self.engine = inference_engine or EnhancerInference()
         self.temporal_blend = max(0.0, min(temporal_blend, 0.8))  # EMA factor for flicker reduction
@@ -31,9 +32,9 @@ class VideoEnhancer:
         output_video_path: str,
         side_by_side: bool = False,
         guided_upsample: bool = True,
-        max_frames: Optional[int] = None,
-        progress_callback: Optional[Callable[[int, int, float], None]] = None
-    ) -> Dict[str, Any]:
+        max_frames: int | None = None,
+        progress_callback: Callable[[int, int, float], None] | None = None
+    ) -> dict[str, Any]:
         """
         Enhances an entire video file from input_video_path to output_video_path.
         

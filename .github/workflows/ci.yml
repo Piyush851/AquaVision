@@ -46,7 +46,7 @@ jobs:
 
       - name: Code Quality & Linting (Ruff)
         run: |
-          ruff check backend/ --ignore E501,E402
+          ruff check backend/ --ignore E501,E402,B008,ASYNC230
 
       - name: Run Automated Test Suite
         env:

@@ -1,15 +1,17 @@
-import os
-import uuid
-import time
 import json
+import logging
+import time
+import uuid
 from pathlib import Path
-from typing import List, Dict, Any, Optional
-from fastapi import APIRouter, File, UploadFile, HTTPException
+from typing import Any
+
+from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from app.model.inference import EnhancerInference
 
+logger = logging.getLogger("aquavision.api")
 router = APIRouter(prefix="/api/v1/enhance", tags=["Enhancement"])
 
 backend_root = Path(__file__).resolve().parent.parent.parent
@@ -25,10 +27,10 @@ class EnhancementResponse(BaseModel):
     filename: str
     original_url: str
     enhanced_url: str
-    annotated_url: Optional[str] = None
-    metrics: Dict[str, Any]
-    detections: Optional[List[Dict[str, Any]]] = None
-    coral_health: Optional[Dict[str, Any]] = None
+    annotated_url: str | None = None
+    metrics: dict[str, Any]
+    detections: list[dict[str, Any]] | None = None
+    coral_health: dict[str, Any] | None = None
 
 
 @router.post("/upload", response_model=EnhancementResponse)
@@ -69,8 +71,9 @@ async def upload_and_enhance(
         if detect_marine and enhanced_path.exists():
             try:
                 import cv2
-                from app.model.marine_detector import MarineDetector
+
                 from app.model.coral_analyzer import CoralHealthAnalyzer
+                from app.model.marine_detector import MarineDetector
 
                 enhanced_img = cv2.imread(str(enhanced_path))
                 if enhanced_img is not None:
@@ -87,8 +90,8 @@ async def upload_and_enhance(
                     # 3. Coral Health Assessment
                     analyzer = CoralHealthAnalyzer()
                     coral_health = analyzer.analyze_frame(enhanced_img)
-            except Exception as det_err:
-                print(f"[Warning] Marine intelligence processing error: {det_err}")
+            except (RuntimeError, ValueError, OSError) as det_err:
+                logger.warning("Marine intelligence processing error: %s", det_err)
 
         # Persist execution metadata sidecar for history & scientific audit
         meta_data = {
@@ -106,8 +109,8 @@ async def upload_and_enhance(
         try:
             with open(meta_path, "w", encoding="utf-8") as f:
                 json.dump(meta_data, f, indent=2)
-        except Exception as e:
-            print(f"[Warning] Failed to write metadata sidecar: {e}")
+        except OSError as e:
+            logger.warning("Failed to write metadata sidecar: %s", e)
 
         return EnhancementResponse(
             id=file_id,
@@ -119,8 +122,8 @@ async def upload_and_enhance(
             detections=detections,
             coral_health=coral_health
         )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Enhancement failed: {str(e)}")
+    except (RuntimeError, ValueError, OSError) as e:
+        raise HTTPException(status_code=500, detail=f"Enhancement failed: {e!s}")
 
 
 @router.post("/detect/{file_id}")
@@ -131,8 +134,9 @@ async def run_detection_on_existing(file_id: str):
         raise HTTPException(status_code=404, detail=f"Enhanced image for ID {file_id} not found.")
 
     import cv2
-    from app.model.marine_detector import MarineDetector
+
     from app.model.coral_analyzer import CoralHealthAnalyzer
+    from app.model.marine_detector import MarineDetector
 
     enhanced_img = cv2.imread(str(enhanced_path))
     if enhanced_img is None:
@@ -159,8 +163,8 @@ async def run_detection_on_existing(file_id: str):
             meta["coral_health"] = coral_health
             with open(meta_path, "w", encoding="utf-8") as f:
                 json.dump(meta, f, indent=2)
-        except Exception:
-            pass
+        except (OSError, json.JSONDecodeError) as err:
+            logger.warning("Could not update metadata sidecar: %s", err)
 
     return {
         "id": file_id,
@@ -170,7 +174,7 @@ async def run_detection_on_existing(file_id: str):
     }
 
 
-@router.get("/history", response_model=List[Dict[str, Any]])
+@router.get("/history", response_model=list[dict[str, Any]])
 async def get_history():
     """Returns a list of recently processed enhanced outputs with real optical metrics."""
     records = []
@@ -196,8 +200,8 @@ async def get_history():
                     annotated_url = meta_json.get("annotated_url")
                     detections = meta_json.get("detections")
                     coral_health = meta_json.get("coral_health")
-            except Exception:
-                pass
+            except (OSError, json.JSONDecodeError) as err:
+                logger.warning("Could not read metadata sidecar for %s: %s", file_id, err)
 
         records.append({
             "id": file_id,
@@ -283,14 +287,15 @@ async def generate_report_endpoint(
     file_id: str,
     operator: str = "Piyush Saini (23EEAIT043)",
     supervisor: str = "Mrs. Bhanupriya Sharma (Engineering College Ajmer)",
-    notes: Optional[str] = None
+    notes: str | None = None
 ):
     """
     Generates a formal Engineering Inspection Report PDF for a previously enhanced frame.
     Incorporates side-by-side evidence, metrology gains, and marine species/coral assessments.
     """
-    from app.utils.report_generator import generate_inspection_pdf
     from fastapi.responses import FileResponse
+
+    from app.utils.report_generator import generate_inspection_pdf
 
     meta_file = OUTPUT_DIR / f"{file_id}_meta.json"
     if not meta_file.exists():
@@ -333,12 +338,12 @@ async def generate_report_endpoint(
 
 
 class BatchZipRequest(BaseModel):
-    file_ids: Optional[List[str]] = None
+    file_ids: list[str] | None = None
 
 
 @router.post("/batch")
 async def process_batch_images(
-    files: List[UploadFile] = File(...),
+    files: list[UploadFile] = File(...),
     force_classical: bool = False,
     detect_marine: bool = True
 ):
@@ -347,8 +352,9 @@ async def process_batch_images(
     Applies AquaVisionNet enhancement, optical quality metrology, and biological marine detection.
     """
     import cv2
-    from app.model.marine_detector import MarineDetector
+
     from app.model.coral_analyzer import CoralHealthAnalyzer
+    from app.model.marine_detector import MarineDetector
 
     if not files:
         raise HTTPException(status_code=400, detail="No files uploaded in batch.")
@@ -393,8 +399,8 @@ async def process_batch_images(
 
                     if enhanced_img is not None and coral_analyzer:
                         coral_health = coral_analyzer.analyze_frame(enhanced_img)
-                except Exception as de:
-                    print(f"[Warning] Batch detection error on {file.filename}: {de}")
+                except (RuntimeError, ValueError, OSError) as de:
+                    logger.warning("Batch detection error on %s: %s", file.filename, de)
 
             meta_data = {
                 "id": file_id,
@@ -411,12 +417,12 @@ async def process_batch_images(
             try:
                 with open(meta_path, "w", encoding="utf-8") as f:
                     json.dump(meta_data, f, indent=2)
-            except Exception:
-                pass
+            except OSError as err:
+                logger.warning("Could not write sidecar for %s: %s", file_id, err)
 
             results.append(meta_data)
-        except Exception as e:
-            print(f"[Error] Failed to process {file.filename}: {e}")
+        except (RuntimeError, ValueError, OSError) as e:
+            logger.error("Failed to process %s: %s", file.filename, e)
 
     elapsed = round(time.time() - t0, 2)
     avg_fps = round(len(results) / elapsed, 1) if elapsed > 0 else 0.0
@@ -431,7 +437,7 @@ async def process_batch_images(
 
 
 @router.post("/batch/zip")
-async def download_batch_zip(payload: Optional[BatchZipRequest] = None):
+async def download_batch_zip(payload: BatchZipRequest | None = None):
     """
     Packages enhanced outputs, HUD annotated frames, and scientific metadata sidecars into a single downloadable ZIP.
     """
@@ -466,8 +472,8 @@ async def download_batch_zip(payload: Optional[BatchZipRequest] = None):
                 try:
                     with open(meta_p, "r", encoding="utf-8") as f:
                         manifest.append(json.load(f))
-                except Exception:
-                    pass
+                except (OSError, json.JSONDecodeError) as err:
+                    logger.warning("Could not load sidecar %s into manifest: %s", meta_p, err)
 
         manifest_data = json.dumps(manifest, indent=2)
         zf.writestr("manifest.json", manifest_data)
@@ -481,7 +487,7 @@ async def download_batch_zip(payload: Optional[BatchZipRequest] = None):
 
 @router.post("/batch/report")
 async def generate_batch_survey_report(
-    payload: Optional[BatchZipRequest] = None,
+    payload: BatchZipRequest | None = None,
     operator: str = "Piyush Saini (23EEAIT043)",
     supervisor: str = "Mrs. Bhanupriya Sharma (Engineering College Ajmer)",
     mission_title: str = "Subsea Inspection Survey Mission"
@@ -499,8 +505,8 @@ async def generate_batch_survey_report(
             try:
                 with open(meta_file, "r", encoding="utf-8") as f:
                     records.append(json.load(f))
-            except Exception:
-                pass
+            except (OSError, json.JSONDecodeError) as err:
+                logger.warning("Could not load report record from %s: %s", meta_file, err)
     else:
         for fid in file_ids:
             meta_file = OUTPUT_DIR / f"{fid}_meta.json"
@@ -508,8 +514,8 @@ async def generate_batch_survey_report(
                 try:
                     with open(meta_file, "r", encoding="utf-8") as f:
                         records.append(json.load(f))
-                except Exception:
-                    pass
+                except (OSError, json.JSONDecodeError) as err:
+                    logger.warning("Could not load report record from %s: %s", meta_file, err)
 
     if not records:
         raise HTTPException(status_code=404, detail="No inspection records found for batch report.")
@@ -540,7 +546,7 @@ ALLOWED_VIDEO_EXTENSIONS = {".mp4", ".mov", ".avi", ".webm", ".mkv"}
 async def enhance_video_endpoint(
     file: UploadFile = File(...),
     side_by_side: bool = True,
-    max_frames: Optional[int] = 300
+    max_frames: int | None = 300
 ):
     """
     Upload and enhance an underwater video with GPU batch inference and anti-flicker temporal smoothing.
@@ -592,8 +598,8 @@ async def enhance_video_endpoint(
             "raw_video_url": f"/uploads/{raw_video_path.name}",
             "stats": stats
         }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Video enhancement failed: {str(e)}")
+    except (RuntimeError, ValueError, OSError) as e:
+        raise HTTPException(status_code=500, detail=f"Video enhancement failed: {e!s}")
 
 
 @router.get("/benchmark")
@@ -602,7 +608,7 @@ async def get_benchmark_results(recalculate: bool = False):
     Returns quantitative metrology benchmark results comparing all models and datasets.
     Includes UIQM, UCIQE, PSNR, SSIM, Latency, and Throughput (FPS).
     """
-    from training.benchmark import run_benchmark, BENCHMARK_JSON
+    from training.benchmark import BENCHMARK_JSON, run_benchmark
 
     try:
         if not recalculate and BENCHMARK_JSON.exists():
@@ -612,8 +618,8 @@ async def get_benchmark_results(recalculate: bool = False):
         # Compute or reload
         data = run_benchmark(max_samples_per_domain=8, use_cached=(not recalculate))
         return data
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Benchmark generation failed: {str(e)}")
+    except (RuntimeError, ValueError, OSError) as e:
+        raise HTTPException(status_code=500, detail=f"Benchmark generation failed: {e!s}")
 
 
 @router.get("/benchmark/export/{export_format}")

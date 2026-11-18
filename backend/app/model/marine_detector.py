@@ -4,10 +4,11 @@ Detects marine organisms, coral reef colonies, sea turtles, anthropogenic marine
 and divers using YOLOv8 with zero-downtime underwater saliency fallback.
 """
 
+from pathlib import Path
+from typing import Any, Optional
+
 import cv2
 import numpy as np
-from pathlib import Path
-from typing import List, Dict, Any, Optional, Tuple, Union
 
 try:
     from ultralytics import YOLO
@@ -34,7 +35,7 @@ class MarineDetector:
     """
     _instance: Optional["MarineDetector"] = None
 
-    def __init__(self, model_path: Optional[str] = None):
+    def __init__(self, model_path: str | None = None):
         self.yolo_model = None
         self.backend_root = Path(__file__).resolve().parent.parent.parent
 
@@ -47,8 +48,8 @@ class MarineDetector:
                 else:
                     # Initialize default lightweight nano model
                     self.yolo_model = YOLO("yolov8n.pt")
-                print(f"[MarineDetector] Loaded YOLOv8 engine successfully.")
-            except Exception as e:
+                print("[MarineDetector] Loaded YOLOv8 engine successfully.")
+            except (ImportError, RuntimeError, OSError, ValueError) as e:
                 print(f"[MarineDetector] Could not load YOLOv8 model ({e}), using Computer Vision Saliency detector.")
                 self.yolo_model = None
         else:
@@ -60,12 +61,12 @@ class MarineDetector:
             cls._instance = MarineDetector()
         return cls._instance
 
-    def detect(self, img_bgr: np.ndarray, conf_threshold: float = 0.25) -> List[Dict[str, Any]]:
+    def detect(self, img_bgr: np.ndarray, conf_threshold: float = 0.25) -> list[dict[str, Any]]:
         """
         Executes marine detection and returns normalized + pixel bounding boxes.
         """
         h, w = img_bgr.shape[:2]
-        detections: List[Dict[str, Any]] = []
+        detections: list[dict[str, Any]] = []
 
         if self.yolo_model is not None:
             try:
@@ -94,7 +95,7 @@ class MarineDetector:
                             "confidence": round(conf, 2),
                             "color_bgr": CATEGORY_COLORS.get(category, (200, 200, 200))
                         })
-            except Exception as e:
+            except (RuntimeError, ValueError, TypeError) as e:
                 print(f"[MarineDetector] YOLO inference error: {e}")
 
         # If YOLO returned zero or is absent, execute optical saliency detector
@@ -103,7 +104,7 @@ class MarineDetector:
 
         return detections
 
-    def _map_yolo_class(self, label: str) -> Tuple[str, str]:
+    def _map_yolo_class(self, label: str) -> tuple[str, str]:
         """Maps general COCO / YOLO labels to marine ecological nomenclature."""
         l = label.lower()
         if any(k in l for k in ["fish", "bird", "animal", "shark", "whale"]):
@@ -119,7 +120,7 @@ class MarineDetector:
         else:
             return (f"Marine Specimen ({label})", "general")
 
-    def _saliency_marine_detection(self, img_bgr: np.ndarray, conf_threshold: float = 0.25) -> List[Dict[str, Any]]:
+    def _saliency_marine_detection(self, img_bgr: np.ndarray, conf_threshold: float = 0.25) -> list[dict[str, Any]]:
         """
         Zero-downtime optical saliency and morphological contour detector.
         Identifies foreground marine organisms and coral formations by color disparity and edge contours.
@@ -129,7 +130,7 @@ class MarineDetector:
 
         # Convert to LAB for luminance and color separation
         lab = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2LAB)
-        l, a, b = lab[:, :, 0], lab[:, :, 1], lab[:, :, 2]
+        l = lab[:, :, 0]
 
         # Saliency via spectral residual or Gaussian difference
         blur_fine = cv2.GaussianBlur(l, (7, 7), 0)
@@ -201,7 +202,7 @@ class MarineDetector:
         detections.sort(key=lambda d: d["confidence"], reverse=True)
         return detections[:10]
 
-    def annotate_image(self, img_bgr: np.ndarray, detections: List[Dict[str, Any]]) -> np.ndarray:
+    def annotate_image(self, img_bgr: np.ndarray, detections: list[dict[str, Any]]) -> np.ndarray:
         """
         Renders bounding boxes, species badges, and confidence chips onto the image.
         """

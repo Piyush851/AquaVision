@@ -1,8 +1,9 @@
+from pathlib import Path
+from typing import Any
+
 import cv2
 import numpy as np
 import torch
-from pathlib import Path
-from typing import Tuple, Union, Dict, Any, Optional, List
 
 
 def apply_white_balance(img: np.ndarray) -> np.ndarray:
@@ -23,7 +24,7 @@ def apply_white_balance(img: np.ndarray) -> np.ndarray:
     return balanced.astype(np.uint8)
 
 
-def apply_clahe(img: np.ndarray, clip_limit: float = 2.0, tile_grid_size: Tuple[int, int] = (8, 8)) -> np.ndarray:
+def apply_clahe(img: np.ndarray, clip_limit: float = 2.0, tile_grid_size: tuple[int, int] = (8, 8)) -> np.ndarray:
     """Applies CLAHE on the L-channel in LAB color space."""
     lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
     l, a, b = cv2.split(lab)
@@ -172,7 +173,7 @@ def guided_upsample(enhanced_low: np.ndarray, guide_high: np.ndarray) -> np.ndar
     return cv2.cvtColor(merged, cv2.COLOR_LAB2BGR)
 
 
-def preprocess_frame(img_bgr: np.ndarray, img_size: Tuple[int, int] = (256, 256)) -> torch.Tensor:
+def preprocess_frame(img_bgr: np.ndarray, img_size: tuple[int, int] = (256, 256)) -> torch.Tensor:
     """Resizes in-memory BGR numpy frame, normalizes to [0, 1], and returns (1, 3, H, W) tensor."""
     img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
     if img_size:
@@ -182,7 +183,7 @@ def preprocess_frame(img_bgr: np.ndarray, img_size: Tuple[int, int] = (256, 256)
     return tensor.unsqueeze(0)
 
 
-def preprocess_image(img_path: Union[str, Path], img_size: Tuple[int, int] = (256, 256)) -> torch.Tensor:
+def preprocess_image(img_path: str | Path, img_size: tuple[int, int] = (256, 256)) -> torch.Tensor:
     """Loads image, resizes, normalizes to [0, 1], and returns (1, 3, H, W) tensor."""
     img = cv2.imread(str(img_path))
     if img is None:
@@ -206,7 +207,7 @@ def classical_enhancement(img_bgr: np.ndarray) -> np.ndarray:
     return apply_clahe(wb)
 
 
-def detect_resolution_profile(width: int, height: int) -> Dict[str, Any]:
+def detect_resolution_profile(width: int, height: int) -> dict[str, Any]:
     """
     Analyzes image resolution and determines the optimal processing strategy:
     - Standard (<= 1280x720): Direct inference + bilateral guided upsampling.
