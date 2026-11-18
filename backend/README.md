@@ -30,7 +30,17 @@ backend/
 ├── outputs/                        # Storage for enhanced output images
 ├── training/
 │   └── train.py                    # PyTorch model training and validation pipeline
+├── tests/
+│   ├── conftest.py                 # Pytest synthetic fixture definitions
+│   ├── test_helpers.py             # Synthetic underwater image generator
+│   ├── test_model.py               # AquaVisionNet architecture & gradient tests
+│   ├── test_utils.py               # White Balance, CLAHE, PSNR utility tests
+│   ├── test_inference.py           # Deep-learning engine & classical fallback tests
+│   └── test_api.py                 # FastAPI endpoint verification suite
+│
 ├── requirements.txt                # Python package dependencies
+├── requirements-dev.txt            # Testing & linting tools (pytest, ruff, pytest-cov)
+├── Dockerfile                      # Production container definition
 ├── .env.example                    # Environment variable configuration template
 └── README.md                       # Backend documentation
 ```
@@ -109,6 +119,34 @@ python training/train.py --dataset all --epochs 30 --batch-size 16 --lr 0.0001
 ```
 
 Checkpoints are saved automatically to `weights/`.
+
+---
+
+## 🧪 Automated Testing
+
+The backend includes a self-contained automated test suite that generates synthetic underwater images on the fly, eliminating any dependency on multi-gigabyte dataset downloads:
+
+```bash
+# Run unit tests via Python's standard unittest runner
+python -m unittest discover -s tests -p "test_*.py" -v
+
+# Run with pytest and generate a code coverage report
+pytest tests -v --cov=app --cov-report=term
+```
+
+---
+
+## 🐳 Docker Deployment
+
+To build and run the backend inside an isolated container:
+
+```bash
+# Build backend image from repository root
+docker build -t aquavision-backend -f backend/Dockerfile .
+
+# Run container on port 8000
+docker run -p 8000:8000 --name aquavision-api aquavision-backend
+```
 
 ---
 

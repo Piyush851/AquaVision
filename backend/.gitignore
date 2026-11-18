@@ -71,9 +71,12 @@ backend/dataset/**
 .DS_Store
 Thumbs.db
 
-# Temporary & Test files
+# Temporary & Test cache files
 temp.py
-tests/
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
 *.log
 *.tmp
 *.bak

@@ -1,0 +1,112 @@
+name: AquaVision CI Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend-ci:
+    name: Backend CI (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1 libglib2.0-0
+
+      - name: Install CPU PyTorch
+        run: |
+          python -m pip install --upgrade pip
+          pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+
+      - name: Install Dependencies
+        run: |
+          pip install -r backend/requirements-dev.txt
+
+      - name: Code Quality & Linting (Ruff)
+        run: |
+          ruff check backend/ --ignore E501,E402
+
+      - name: Run Automated Test Suite
+        env:
+          PYTHONPATH: backend
+        run: |
+          pytest backend/tests -v --cov=backend/app --cov-report=xml --cov-report=term
+
+      - name: Upload Backend Coverage
+        uses: actions/upload-artifact@v4
+        if: matrix.python-version == '3.11'
+        with:
+          name: backend-coverage-report
+          path: coverage.xml
+          retention-days: 7
+
+  frontend-ci:
+    name: Frontend CI (Node 20)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Frontend Dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: TypeScript Type Check
+        working-directory: frontend
+        run: npx tsc --noEmit
+
+      - name: ESLint Check
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Next.js Production Build
+        working-directory: frontend
+        env:
+          NEXT_TELEMETRY_DISABLED: 1
+          NEXT_PUBLIC_API_URL: http://localhost:8000
+        run: npm run build
+
+  docker-verification:
+    name: Docker Container Build Check
+    runs-on: ubuntu-latest
+    needs: [backend-ci, frontend-ci]
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Validate Docker Compose Build
+        run: docker compose build --parallel

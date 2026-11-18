@@ -139,17 +139,27 @@ export async function switchModel(modelName: string): Promise<{
   return res.json();
 }
 
-export async function enhanceVideo(
-  file: File,
-  sideBySide: boolean = true,
-  maxFrames: number = 300
-): Promise<{
+export interface VideoEnhancementStats {
+  average_fps: number;
+  frames_processed: number;
+  total_frames: number;
+  elapsed_seconds: number;
+  side_by_side: boolean;
+}
+
+export interface VideoEnhancementResult {
   id: string;
   filename: string;
   enhanced_video_url: string;
   raw_video_url: string;
-  stats: Record<string, unknown>;
-}> {
+  stats: VideoEnhancementStats;
+}
+
+export async function enhanceVideo(
+  file: File,
+  sideBySide: boolean = true,
+  maxFrames: number = 300
+): Promise<VideoEnhancementResult> {
   const formData = new FormData();
   formData.append("file", file);
   const url = `${API_BASE_URL}/api/v1/enhance/video?side_by_side=${sideBySide}&max_frames=${maxFrames}`;

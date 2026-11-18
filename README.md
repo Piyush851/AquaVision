@@ -11,7 +11,8 @@
 <p align="center">
   <img src="https://img.shields.io/badge/PyTorch-2.6.0-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white" alt="PyTorch" />
   <img src="https://img.shields.io/badge/CUDA-12.8-76B900?style=for-the-badge&logo=nvidia&logoColor=white" alt="CUDA" />
-  <img src="https://img.shields.io/badge/YOLOv8-Ultralytics-00ffff?style=for-the-badge" alt="YOLOv8" />
+  <img src="https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white" alt="CI/CD" />
+  <img src="https://img.shields.io/badge/Docker-Multi--Stage-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker" />
   <img src="https://img.shields.io/badge/FastAPI-0.115-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI" />
   <img src="https://img.shields.io/badge/Next.js-16-000000?style=for-the-badge&logo=nextdotjs&logoColor=white" alt="Next.js" />
   <img src="https://img.shields.io/badge/TypeScript-5.0-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
@@ -29,12 +30,13 @@
 6. [System Architecture](#-system-architecture)
 7. [Installation & Quickstart](#-installation--quickstart)
    - [Hardware & Software Prerequisites](#prerequisites)
-   - [Backend Setup (FastAPI & PyTorch)](#1-backend-setup)
-   - [Frontend Setup (Next.js & React)](#2-frontend-setup)
-8. [Usage Guide](#-usage-guide)
-9. [API Reference](#-api-reference)
-10. [Scientific Evaluation Metrology](#-scientific-evaluation-metrology)
-11. [Academic Attribution & Team](#-academic-attribution--team)
+   - [Option A: Docker Compose (Recommended)](#option-a-docker-compose-recommended)
+   - [Option B: Local Bare-Metal Setup](#option-b-local-bare-metal-setup)
+8. [Automated Testing & CI/CD Pipeline](#-automated-testing--cicd-pipeline)
+9. [Usage Guide](#-usage-guide)
+10. [API Reference](#-api-reference)
+11. [Scientific Evaluation Metrology](#-scientific-evaluation-metrology)
+12. [Academic Attribution & Team](#-academic-attribution--team)
 
 ---
 
@@ -149,18 +151,38 @@ To process 1080p and 4K images on hardware with 4 GB VRAM:
 - **Operating System**: Windows 10/11, Ubuntu 20.04+, or macOS
 - **Python**: 3.10+ (Recommended: PyTorch 2.6 with CUDA support)
 - **Node.js**: 18.0+ & **npm**
+- **Docker & Docker Compose** (Optional, for instant containerized deployment)
 - **GPU (Optional)**: NVIDIA GPU with CUDA 12+ (e.g., NVIDIA GeForce RTX 3050 Laptop GPU, 4 GB VRAM)
 
 ---
 
-### 1. Backend Setup
+### Option A: Docker Compose (Recommended)
+
+Run both the FastAPI backend and Next.js frontend with unified networking in a single command:
 
 ```bash
-# 1. Clone the repository
+# Clone the repository
 git clone https://github.com/Piyush851/AquaVision.git
+cd AquaVision
+
+# Build and start services in detached mode
+docker compose up --build -d
+```
+
+- **Frontend Application:** `http://localhost:3000`
+- **Backend API & Swagger Docs:** `http://localhost:8000/docs`
+- **Health Check:** `http://localhost:8000/health`
+
+---
+
+### Option B: Local Bare-Metal Setup
+
+#### 1. Backend Setup
+
+```bash
 cd AquaVision/backend
 
-# 2. Create and activate virtual environment
+# Create and activate virtual environment
 python -m venv venv
 
 # Windows:
@@ -168,29 +190,59 @@ venv\Scripts\activate
 # Linux/macOS:
 source venv/bin/activate
 
-# 3. Install dependencies
+# Install dependencies
 pip install -r requirements.txt
 
-# 4. Start the FastAPI server
+# Start the FastAPI server
 python app/main.py
 ```
-Backend runs at **`http://localhost:8000`** (Swagger docs: `http://localhost:8000/docs`).
+Backend runs at **`http://localhost:8000`**.
+
+#### 2. Frontend Setup
+
+```bash
+cd ../frontend
+
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+```
+Frontend runs at **`http://localhost:3000`**.
 
 ---
 
-### 2. Frontend Setup
+## 🧪 Automated Testing & CI/CD Pipeline
+
+AquaVision incorporates an enterprise-grade Continuous Integration and Continuous Deployment pipeline built on **GitHub Actions**.
+
+### Test Suite Execution
+The backend test suite is decoupled from large datasets via synthetic underwater image generators:
 
 ```bash
-# 1. Navigate to frontend directory
-cd ../frontend
+# Run unit & API test suite via Python standard runner
+python -m unittest discover -s backend/tests -p "test_*.py" -v
 
-# 2. Install dependencies
-npm install
-
-# 3. Start development server
-npm run dev
+# Or run with pytest and code coverage metrics
+pytest backend/tests -v --cov=backend/app --cov-report=term
 ```
-Open **`http://localhost:3000`** in your browser.
+
+### Frontend Type-Checking & Linting
+```bash
+cd frontend
+npx tsc --noEmit     # Strict TypeScript type verification
+npm run lint         # ESLint 9 code quality check
+npm run build        # Production build verification
+```
+
+### GitHub Actions Pipeline
+- **`ci.yml`**: Triggered on pull requests and pushes to `main` and `develop`. Executes:
+  - Python test matrix (`3.11`, `3.12`) with CPU PyTorch optimization.
+  - Code formatting & linting with `ruff`.
+  - Frontend TypeScript verification and Next.js production build.
+  - Docker Compose multi-stage build smoke test.
+- **`cd.yml`**: Triggered on release tags (`v*.*.*`). Builds and publishes production images to GitHub Container Registry (`ghcr.io`).
 
 ---
 

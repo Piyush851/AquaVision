@@ -59,8 +59,24 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 To create an optimized production build:
 
 ```bash
+# Type check and build
+npx tsc --noEmit
 npm run build
 npm run start
+```
+
+---
+
+## 🐳 Docker Deployment
+
+To build and run the frontend inside an optimized Next.js standalone container:
+
+```bash
+# Build frontend image from repository root
+docker build -t aquavision-frontend -f frontend/Dockerfile .
+
+# Run container on port 3000
+docker run -p 3000:3000 -e NEXT_PUBLIC_API_URL=http://localhost:8000 aquavision-frontend
 ```
 
 ---

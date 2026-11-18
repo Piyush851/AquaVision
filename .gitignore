@@ -70,11 +70,13 @@ dataset/euvp/**
 dataset/UIEB/**
 dataset/uieb/**
 
-# Temporary, Scratch & Test files
+# Temporary, Scratch & Test cache files
 temp.py
 backend/temp.py
-tests/
-backend/tests/
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
 *.log
 *.tmp
 *.bak
