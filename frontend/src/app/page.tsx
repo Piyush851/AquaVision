@@ -70,7 +70,7 @@ export default function Home() {
       try {
         const records = await getHistory();
         if (records.length > 0) {
-          const latest = records[0];
+          const latest = records.find((r) => !r.enhanced_url.toLowerCase().endsWith(".mp4")) || records[0];
           setActiveResult({
             id: latest.id,
             filename: latest.filename || latest.enhanced_file,

@@ -353,13 +353,24 @@ export async function enhanceVideo(
   file: File,
   sideBySide: boolean = true,
   maxFrames: number = 300,
-  temporalBlend: number = 0.25
+  temporalBlend: number = 0.25,
+  forceClassical: boolean = false
 ): Promise<VideoEnhancementResult> {
   const formData = new FormData();
   formData.append("file", file);
-  const url = `${API_BASE_URL}/api/v1/enhance/video?side_by_side=${sideBySide}&max_frames=${maxFrames}&temporal_blend=${temporalBlend}`;
+  const url = `${API_BASE_URL}/api/v1/enhance/video?side_by_side=${sideBySide}&max_frames=${maxFrames}&temporal_blend=${temporalBlend}&force_classical=${forceClassical}`;
+  
+  const headers: Record<string, string> = {
+    "X-Guest-ID": getGuestId(),
+  };
+  const token = getAuthToken();
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
   const res = await fetch(url, {
     method: "POST",
+    headers,
     body: formData,
   });
   if (!res.ok) {
@@ -423,8 +434,17 @@ export async function uploadBatchAndEnhance(
   files.forEach((f) => formData.append("files", f));
 
   const url = `${API_BASE_URL}/api/v1/enhance/batch?force_classical=${forceClassical}&detect_marine=${detectMarine}`;
+  const headers: Record<string, string> = {
+    "X-Guest-ID": getGuestId(),
+  };
+  const token = getAuthToken();
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
   const res = await fetch(url, {
     method: "POST",
+    headers,
     body: formData,
   });
 

@@ -33,6 +33,7 @@ class VideoEnhancer:
         side_by_side: bool = False,
         guided_upsample: bool = True,
         max_frames: int | None = None,
+        force_classical: bool = False,
         progress_callback: Callable[[int, int, float], None] | None = None
     ) -> dict[str, Any]:
         """
@@ -44,6 +45,7 @@ class VideoEnhancer:
             side_by_side: If True, writes [Raw | Enhanced] split video.
             guided_upsample: If True, uses bilateral guided filtering on output.
             max_frames: Optional cap on frames for quick processing.
+            force_classical: If True, uses zero-downtime classical CV equalization instead of neural net.
             progress_callback: Optional callback(current_frame, total_frames, fps).
         """
         cap = cv2.VideoCapture(str(input_video_path))
@@ -65,14 +67,27 @@ class VideoEnhancer:
         out_path = Path(output_video_path)
         out_path.parent.mkdir(parents=True, exist_ok=True)
 
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        writer = cv2.VideoWriter(str(out_path), fourcc, out_fps, (out_width, out_height))
-        if not writer.isOpened():
-            for c in ['avc1', 'XVID', 'MJPG']:
-                fourcc = cv2.VideoWriter_fourcc(*c)
-                writer = cv2.VideoWriter(str(out_path), fourcc, out_fps, (out_width, out_height))
-                if writer.isOpened():
-                    break
+        use_imageio = False
+        writer = None
+        try:
+            import imageio
+            writer = imageio.get_writer(
+                str(out_path),
+                fps=out_fps,
+                codec='libx264',
+                pixelformat='yuv420p',
+                macro_block_size=None
+            )
+            use_imageio = True
+        except (ImportError, OSError, ValueError, RuntimeError):
+            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+            writer = cv2.VideoWriter(str(out_path), fourcc, out_fps, (out_width, out_height))
+            if not writer.isOpened():
+                for c in ['avc1', 'XVID', 'MJPG']:
+                    fourcc = cv2.VideoWriter_fourcc(*c)
+                    writer = cv2.VideoWriter(str(out_path), fourcc, out_fps, (out_width, out_height))
+                    if writer.isOpened():
+                        break
 
         prev_enhanced = None
         frame_idx = 0
@@ -88,7 +103,8 @@ class VideoEnhancer:
                 result = self.engine.enhance_frame(
                     frame,
                     guided_upsample_flag=guided_upsample,
-                    return_metrics=False
+                    return_metrics=False,
+                    force_classical=force_classical
                 )
                 curr_enhanced = result["enhanced_image"]
 
@@ -111,9 +127,15 @@ class VideoEnhancer:
                     cv2.putText(frame, "RAW CAPTURE", (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
                     cv2.putText(curr_enhanced, "AQUAVISION ENHANCED", (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
                     composite = np.hstack((frame, curr_enhanced))
-                    writer.write(composite)
+                    output_frame = composite
                 else:
-                    writer.write(curr_enhanced)
+                    output_frame = curr_enhanced
+
+                if use_imageio and writer is not None:
+                    rgb_frame = cv2.cvtColor(output_frame, cv2.COLOR_BGR2RGB)
+                    writer.append_data(rgb_frame)
+                elif writer is not None:
+                    writer.write(output_frame)
 
                 frame_idx += 1
                 elapsed = time.time() - start_time
@@ -124,7 +146,10 @@ class VideoEnhancer:
 
         finally:
             cap.release()
-            writer.release()
+            if use_imageio and writer is not None:
+                writer.close()
+            elif writer is not None:
+                writer.release()
 
         total_time = time.time() - start_time
         avg_fps = frame_idx / (total_time + 1e-6)

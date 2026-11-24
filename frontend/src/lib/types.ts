@@ -14,6 +14,15 @@ export interface EnhancementMetrics {
     megapixels: number;
     description: string;
   };
+  type?: string;
+  stats?: {
+    average_fps?: number;
+    frames_processed?: number;
+    total_frames?: number;
+    elapsed_seconds?: number;
+    side_by_side?: boolean;
+  };
+  [key: string]: unknown;
 }
 
 export interface MarineDetection {

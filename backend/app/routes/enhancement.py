@@ -246,10 +246,15 @@ async def run_detection_on_existing(file_id: str):
 async def get_history():
     """Returns a list of recently processed enhanced outputs with real optical metrics."""
     records = []
-    for out_file in OUTPUT_DIR.glob("*_enhanced.png"):
-        file_id = out_file.stem.replace("_enhanced", "")
+    image_outputs = list(OUTPUT_DIR.glob("*_enhanced.png"))
+    video_outputs = list(OUTPUT_DIR.glob("*_video_enhanced.mp4"))
+
+    all_outputs = sorted(image_outputs + video_outputs, key=lambda p: p.stat().st_mtime, reverse=True)
+
+    for out_file in all_outputs[:100]:
+        file_id = out_file.stem.replace("_video_enhanced", "").replace("_enhanced", "")
         # Look for corresponding raw file in uploads
-        raw_matches = list(UPLOAD_DIR.glob(f"{file_id}_raw.*"))
+        raw_matches = list(UPLOAD_DIR.glob(f"{file_id}*"))
         raw_url = f"/uploads/{raw_matches[0].name}" if raw_matches else None
         
         # Load persisted metrics sidecar if available
@@ -413,11 +418,15 @@ class BatchZipRequest(BaseModel):
 async def process_batch_images(
     files: list[UploadFile] = File(...),
     force_classical: bool = False,
-    detect_marine: bool = True
+    detect_marine: bool = True,
+    x_guest_id: str | None = Header(None, alias="X-Guest-ID"),
+    current_user: User | None = Depends(get_current_user_optional),
+    db: Session = Depends(get_db)
 ):
     """
     Asynchronously processes a batch of underwater images or a directory upload queue.
-    Applies AquaVisionNet enhancement, optical quality metrology, and biological marine detection.
+    Applies AquaVisionNet enhancement, optical quality metrology, biological marine detection,
+    and catalogs each result to the persistent database and metadata sidecars.
     """
     import cv2
 
@@ -426,6 +435,15 @@ async def process_batch_images(
 
     if not files:
         raise HTTPException(status_code=400, detail="No files uploaded in batch.")
+
+    gid = x_guest_id or "anonymous_guest"
+    if not current_user:
+        is_allowed, used, max_allowed = check_guest_quota(gid)
+        if not is_allowed:
+            raise HTTPException(
+                status_code=403,
+                detail=f"Guest enhancement quota reached ({used}/{max_allowed}). Please sign in or create a free account to continue unlimited enhancements."
+            )
 
     t0 = time.time()
     enhancer = EnhancerInference.get_instance()
@@ -469,6 +487,53 @@ async def process_batch_images(
                         coral_health = coral_analyzer.analyze_frame(enhanced_img)
                 except (RuntimeError, ValueError, OSError) as de:
                     logger.warning("Batch detection error on %s: %s", file.filename, de)
+
+            # Database Persistence
+            try:
+                record = EnhancementRecord(
+                    id=file_id,
+                    user_id=current_user.id if current_user else None,
+                    guest_session_id=gid if not current_user else None,
+                    original_filename=file.filename or raw_name,
+                    raw_image_path=f"/uploads/{raw_name}",
+                    enhanced_image_path=f"/outputs/{enhanced_name}",
+                    annotated_image_path=f"/outputs/{annotated_name}" if annotated_name else None,
+                    model_name=str(metrics.get("active_weights", "AquaVisionNet (Unified)")),
+                    inference_mode=str(metrics.get("inference_mode", "deep-learning")),
+                    uiqm_score=float(metrics.get("uiqm", 0.0)) if metrics.get("uiqm") is not None else None,
+                    uciqe_score=float(metrics.get("uciqe", 0.0)) if metrics.get("uciqe") is not None else None,
+                    psnr_score=float(metrics.get("estimated_psnr", 0.0)) if metrics.get("estimated_psnr") is not None else None,
+                    metrics=metrics,
+                    detections=detections,
+                    coral_health=coral_health,
+                    is_flagged_for_training=True,
+                    created_at=datetime.now(UTC)
+                )
+                db.add(record)
+                db.commit()
+                logger.info("Cataloged batch image %s to database (user_id=%s)", file_id, current_user.id if current_user else "guest")
+            except (SQLAlchemyError, OSError, ValueError) as db_err:
+                logger.warning("Failed to catalog batch image %s into database: %s", file_id, db_err)
+                db.rollback()
+
+            if not current_user:
+                try:
+                    new_count = increment_guest_enhancement_count(gid)
+                    g_usage = db.query(GuestUsage).filter(GuestUsage.guest_id == gid).first()
+                    if not g_usage:
+                        g_usage = GuestUsage(
+                            guest_id=gid,
+                            enhancement_count=new_count,
+                            created_at=datetime.now(UTC),
+                            last_activity_at=datetime.now(UTC)
+                        )
+                        db.add(g_usage)
+                    else:
+                        g_usage.enhancement_count = new_count
+                        g_usage.last_activity_at = datetime.now(UTC)
+                    db.commit()
+                except (SQLAlchemyError, OSError, ValueError) as usage_err:
+                    logger.warning("Could not persist guest usage: %s", usage_err)
 
             meta_data = {
                 "id": file_id,
@@ -572,7 +637,9 @@ async def generate_batch_survey_report(
         for meta_file in sorted(OUTPUT_DIR.glob("*_meta.json"), key=lambda p: p.stat().st_mtime, reverse=True)[:25]:
             try:
                 with open(meta_file, "r", encoding="utf-8") as f:
-                    records.append(json.load(f))
+                    data = json.load(f)
+                    if data.get("metrics", {}).get("type") != "video":
+                        records.append(data)
             except (OSError, json.JSONDecodeError) as err:
                 logger.warning("Could not load report record from %s: %s", meta_file, err)
     else:
@@ -615,11 +682,15 @@ async def enhance_video_endpoint(
     file: UploadFile = File(...),
     side_by_side: bool = True,
     max_frames: int | None = 300,
-    temporal_blend: float = 0.25
+    temporal_blend: float = 0.25,
+    force_classical: bool = False,
+    x_guest_id: str | None = Header(None, alias="X-Guest-ID"),
+    current_user: User | None = Depends(get_current_user_optional),
+    db: Session = Depends(get_db)
 ):
     """
     Upload and enhance an underwater video with GPU batch inference and anti-flicker temporal smoothing.
-    Enforces a strict 50 MB upload size limit and supported video container verification.
+    Enforces a strict 50 MB upload size limit and catalogs video enhancement into persistent database storage.
     """
     from app.utils.video_processor import VideoEnhancer
 
@@ -629,6 +700,15 @@ async def enhance_video_endpoint(
             status_code=400,
             detail=f"Unsupported video format '{ext}'. Allowed formats: {', '.join(sorted(ALLOWED_VIDEO_EXTENSIONS))}"
         )
+
+    gid = x_guest_id or "anonymous_guest"
+    if not current_user:
+        is_allowed, used, max_allowed = check_guest_quota(gid)
+        if not is_allowed:
+            raise HTTPException(
+                status_code=403,
+                detail=f"Guest enhancement quota reached ({used}/{max_allowed}). Please sign in or create a free account to continue unlimited enhancements."
+            )
 
     file_id = str(uuid.uuid4())[:8]
     raw_video_path = UPLOAD_DIR / f"{file_id}_video_raw{ext}"
@@ -658,8 +738,84 @@ async def enhance_video_endpoint(
             input_video_path=str(raw_video_path),
             output_video_path=str(out_video_path),
             side_by_side=side_by_side,
-            max_frames=max_frames
+            max_frames=max_frames,
+            force_classical=force_classical
         )
+
+        video_metrics = {
+            "type": "video",
+            "stats": stats,
+            "temporal_blend": temporal_blend,
+            "max_frames": max_frames,
+            "side_by_side": side_by_side,
+            "active_weights": "AquaVisionNet (Video Anti-Flicker)",
+            "inference_mode": "forced-classical-cv" if force_classical else "deep-learning (video)"
+        }
+
+        # 1. Metadata sidecar
+        meta_data = {
+            "id": file_id,
+            "filename": file.filename or raw_video_path.name,
+            "original_url": f"/uploads/{raw_video_path.name}",
+            "enhanced_url": f"/outputs/{out_video_name}",
+            "created_at": time.time(),
+            "metrics": video_metrics
+        }
+        meta_path = OUTPUT_DIR / f"{file_id}_meta.json"
+        try:
+            with open(meta_path, "w", encoding="utf-8") as f:
+                json.dump(meta_data, f, indent=2)
+        except OSError as err:
+            logger.warning("Could not write video sidecar for %s: %s", file_id, err)
+
+        # 2. Database Persistence
+        try:
+            record = EnhancementRecord(
+                id=file_id,
+                user_id=current_user.id if current_user else None,
+                guest_session_id=gid if not current_user else None,
+                original_filename=file.filename or raw_video_path.name,
+                raw_image_path=f"/uploads/{raw_video_path.name}",
+                enhanced_image_path=f"/outputs/{out_video_name}",
+                annotated_image_path=None,
+                model_name="AquaVisionNet (Video Anti-Flicker)",
+                inference_mode="forced-classical-cv" if force_classical else "deep-learning (video)",
+                uiqm_score=None,
+                uciqe_score=None,
+                psnr_score=None,
+                metrics=video_metrics,
+                detections=None,
+                coral_health=None,
+                is_flagged_for_training=False,
+                created_at=datetime.now(UTC)
+            )
+            db.add(record)
+            db.commit()
+            logger.info("Cataloged video enhancement %s to database (user_id=%s)", file_id, current_user.id if current_user else "guest")
+        except (SQLAlchemyError, OSError, ValueError) as db_err:
+            logger.warning("Failed to catalog video into database: %s", db_err)
+            db.rollback()
+
+        # 3. Quota accounting for guest sessions
+        if not current_user:
+            try:
+                new_count = increment_guest_enhancement_count(gid)
+                g_usage = db.query(GuestUsage).filter(GuestUsage.guest_id == gid).first()
+                if not g_usage:
+                    g_usage = GuestUsage(
+                        guest_id=gid,
+                        enhancement_count=new_count,
+                        created_at=datetime.now(UTC),
+                        last_activity_at=datetime.now(UTC)
+                    )
+                    db.add(g_usage)
+                else:
+                    g_usage.enhancement_count = new_count
+                    g_usage.last_activity_at = datetime.now(UTC)
+                db.commit()
+            except (SQLAlchemyError, OSError, ValueError) as usage_err:
+                logger.warning("Could not persist guest usage: %s", usage_err)
+
         return {
             "id": file_id,
             "filename": file.filename,

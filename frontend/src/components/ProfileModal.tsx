@@ -12,6 +12,7 @@ import {
   Filter,
   Clock,
   CheckCircle2,
+  Film,
 } from "lucide-react";
 import { getUserHistory, resolveImageUrl } from "@/lib/api";
 import { User, UserHistoryRecord } from "@/lib/types";
@@ -238,6 +239,10 @@ export default function ProfileModal({
                   })
                   : "Recorded";
 
+                const isVideo =
+                  item.enhanced_url.toLowerCase().endsWith(".mp4") ||
+                  Boolean(item.filename?.toLowerCase().match(/\.(mp4|mov|avi|webm|mkv)$/));
+
                 return (
                   <div
                     key={item.id}
@@ -245,19 +250,36 @@ export default function ProfileModal({
                   >
                     {/* Visual Comparison Thumbnails */}
                     <div className="flex items-center gap-3 w-full sm:w-auto">
-                      <div className="relative flex items-center -space-x-3 shrink-0">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={resolveImageUrl(item.raw_url)}
-                          alt="Raw underwater sample"
-                          className="h-16 w-20 rounded-lg object-cover border border-zinc-700/60 shadow-md"
-                        />
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={resolveImageUrl(item.enhanced_url)}
-                          alt="Enhanced result"
-                          className="h-16 w-20 rounded-lg object-cover border-2 border-cyan-500 shadow-lg shadow-cyan-500/20"
-                        />
+                      <div className="relative flex items-center shrink-0">
+                        {isVideo ? (
+                          <div className="relative h-16 w-24 rounded-lg overflow-hidden border border-zinc-700/60 bg-zinc-950 flex items-center justify-center shadow-md">
+                            <video
+                              src={resolveImageUrl(item.enhanced_url)}
+                              className="h-full w-full object-cover"
+                              muted
+                              playsInline
+                              preload="metadata"
+                            />
+                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center pointer-events-none">
+                              <Film className="h-6 w-6 text-cyan-400 drop-shadow" />
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="relative flex items-center -space-x-3 shrink-0">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={resolveImageUrl(item.raw_url)}
+                              alt="Raw underwater sample"
+                              className="h-16 w-20 rounded-lg object-cover border border-zinc-700/60 shadow-md"
+                            />
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={resolveImageUrl(item.enhanced_url)}
+                              alt="Enhanced result"
+                              className="h-16 w-20 rounded-lg object-cover border-2 border-cyan-500 shadow-lg shadow-cyan-500/20"
+                            />
+                          </div>
+                        )}
                       </div>
 
                       <div className="min-w-0 flex-1">
@@ -268,6 +290,11 @@ export default function ProfileModal({
                           <span className="rounded bg-cyan-950/60 border border-cyan-800/40 px-1.5 py-0.5 text-[10px] font-medium text-cyan-300 shrink-0">
                             {item.model_name}
                           </span>
+                          {isVideo && (
+                            <span className="rounded bg-indigo-950/60 border border-indigo-800/40 px-1.5 py-0.5 text-[10px] font-medium text-indigo-300 shrink-0">
+                              Video
+                            </span>
+                          )}
                         </div>
                         <p className="mt-0.5 text-[11px] text-zinc-500 flex items-center gap-1">
                           <Clock className="h-3 w-3" />
@@ -276,20 +303,42 @@ export default function ProfileModal({
 
                         {/* Optical Metric Highlights */}
                         <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px]">
-                          {item.psnr !== undefined && item.psnr !== null && (
-                            <span className="rounded bg-zinc-800/80 px-2 py-0.5 text-zinc-300 font-mono">
-                              PSNR: <strong className="text-cyan-400">{item.psnr.toFixed(1)} dB</strong>
-                            </span>
-                          )}
-                          {item.uiqm !== undefined && item.uiqm !== null && (
-                            <span className="rounded bg-zinc-800/80 px-2 py-0.5 text-zinc-300 font-mono">
-                              UIQM: <strong className="text-emerald-400">{item.uiqm.toFixed(2)}</strong>
-                            </span>
-                          )}
-                          {item.uciqe !== undefined && item.uciqe !== null && (
-                            <span className="rounded bg-zinc-800/80 px-2 py-0.5 text-zinc-300 font-mono">
-                              UCIQE: <strong className="text-blue-400">{item.uciqe.toFixed(2)}</strong>
-                            </span>
+                          {isVideo ? (
+                            <>
+                              {item.metrics?.stats?.average_fps !== undefined && (
+                                <span className="rounded bg-zinc-800/80 px-2 py-0.5 text-zinc-300 font-mono">
+                                  FPS: <strong className="text-cyan-400">{item.metrics.stats.average_fps}</strong>
+                                </span>
+                              )}
+                              {item.metrics?.stats?.frames_processed !== undefined && (
+                                <span className="rounded bg-zinc-800/80 px-2 py-0.5 text-zinc-300 font-mono">
+                                  Frames: <strong className="text-emerald-400">{item.metrics.stats.frames_processed}</strong>
+                                </span>
+                              )}
+                              {item.metrics?.stats?.elapsed_seconds !== undefined && (
+                                <span className="rounded bg-zinc-800/80 px-2 py-0.5 text-zinc-300 font-mono">
+                                  Time: <strong className="text-blue-400">{item.metrics.stats.elapsed_seconds}s</strong>
+                                </span>
+                              )}
+                            </>
+                          ) : (
+                            <>
+                              {item.psnr !== undefined && item.psnr !== null && (
+                                <span className="rounded bg-zinc-800/80 px-2 py-0.5 text-zinc-300 font-mono">
+                                  PSNR: <strong className="text-cyan-400">{item.psnr.toFixed(1)} dB</strong>
+                                </span>
+                              )}
+                              {item.uiqm !== undefined && item.uiqm !== null && (
+                                <span className="rounded bg-zinc-800/80 px-2 py-0.5 text-zinc-300 font-mono">
+                                  UIQM: <strong className="text-emerald-400">{item.uiqm.toFixed(2)}</strong>
+                                </span>
+                              )}
+                              {item.uciqe !== undefined && item.uciqe !== null && (
+                                <span className="rounded bg-zinc-800/80 px-2 py-0.5 text-zinc-300 font-mono">
+                                  UCIQE: <strong className="text-blue-400">{item.uciqe.toFixed(2)}</strong>
+                                </span>
+                              )}
+                            </>
                           )}
                         </div>
                       </div>
@@ -297,25 +346,38 @@ export default function ProfileModal({
 
                     {/* Action Triggers */}
                     <div className="flex items-center gap-2 w-full sm:w-auto justify-end border-t border-zinc-800/60 sm:border-0 pt-2 sm:pt-0">
-                      {onSelectRecord && (
-                        <button
-                          onClick={() => {
-                            onSelectRecord(item);
-                            onClose();
-                          }}
+                      {isVideo ? (
+                        <a
+                          href={resolveImageUrl(item.enhanced_url)}
+                          target="_blank"
+                          rel="noopener noreferrer"
                           className="flex items-center gap-1.5 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-xs font-medium text-zinc-300 transition-colors hover:border-cyan-500/50 hover:bg-zinc-800 hover:text-white"
-                          title="Load this enhancement into the interactive split comparator"
+                          title="Open enhanced video in new tab"
                         >
                           <Eye className="h-3.5 w-3.5 text-cyan-400" />
-                          <span>Compare</span>
-                        </button>
+                          <span>Play</span>
+                        </a>
+                      ) : (
+                        onSelectRecord && (
+                          <button
+                            onClick={() => {
+                              onSelectRecord(item);
+                              onClose();
+                            }}
+                            className="flex items-center gap-1.5 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-xs font-medium text-zinc-300 transition-colors hover:border-cyan-500/50 hover:bg-zinc-800 hover:text-white"
+                            title="Load this enhancement into the interactive split comparator"
+                          >
+                            <Eye className="h-3.5 w-3.5 text-cyan-400" />
+                            <span>Compare</span>
+                          </button>
+                        )
                       )}
 
                       <a
                         href={resolveImageUrl(item.enhanced_url)}
-                        download={`AquaVision_${item.id}_enhanced.png`}
+                        download={isVideo ? `AquaVision_${item.id}_enhanced.mp4` : `AquaVision_${item.id}_enhanced.png`}
                         className="flex items-center gap-1.5 rounded-lg bg-zinc-800 px-3 py-1.5 text-xs font-medium text-zinc-200 transition-colors hover:bg-cyan-500 hover:text-white"
-                        title="Download enhanced high-resolution image"
+                        title={isVideo ? "Download enhanced video" : "Download enhanced high-resolution image"}
                       >
                         <Download className="h-3.5 w-3.5" />
                         <span>Download</span>
