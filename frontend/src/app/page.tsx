@@ -261,48 +261,40 @@ export default function Home() {
         {activeTab === "video" ? (
           <VideoProcessor />
         ) : activeTab === "batch" ? (
-          <BatchProcessor />
+          <BatchProcessor
+            onInspectItem={(item) => {
+              setActiveResult(item);
+              setActiveTab("image");
+            }}
+          />
         ) : (
-          <>
-            {/* Main 2-Column Responsive Workspace */}
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-              {/* Left Column: Upload & Options */}
-              <div className="lg:col-span-4">
-                <ImageUploader onProcess={handleProcess} isLoading={isLoading} />
-              </div>
+          <div className="flex flex-col gap-6">
+            {/* Staged Ingestion / Control Bar */}
+            <ImageUploader
+              onProcess={handleProcess}
+              isLoading={isLoading}
+              activeResult={activeResult}
+            />
 
-              {/* Right Column: Comparison Viewer & Telemetry */}
-              <div className="flex flex-col gap-4 lg:col-span-8">
-                {activeResult ? (
-                  <>
-                    <ComparisonViewer
-                      originalUrl={activeResult.original_url}
-                      enhancedUrl={activeResult.enhanced_url}
-                      annotatedUrl={activeResult.annotated_url}
-                      filename={activeResult.filename}
-                      resultId={activeResult.id}
-                      detections={activeResult.detections}
-                    />
-                    <MetricsPanel
-                      metrics={activeResult.metrics}
-                      detections={activeResult.detections}
-                      coralHealth={activeResult.coral_health}
-                    />
-                  </>
-                ) : (
-                  <div className="flex min-h-[400px] flex-col items-center justify-center rounded-xl border border-dashed border-zinc-800 bg-zinc-900/20 p-8 text-center text-zinc-500">
-                    <ImageIcon className="mb-2 h-8 w-8 text-zinc-600" />
-                    <p className="text-sm font-medium text-zinc-400">
-                      No Image Selected
-                    </p>
-                    <p className="mt-1 text-xs text-zinc-500 max-w-sm">
-                      Upload an underwater image on the left, or pick one of the sample benchmark images to see instant enhancement.
-                    </p>
-                  </div>
-                )}
+            {/* Inspection Stage: Comparison Viewer & Telemetry */}
+            {activeResult && (
+              <div className="flex flex-col gap-6">
+                <ComparisonViewer
+                  originalUrl={activeResult.original_url}
+                  enhancedUrl={activeResult.enhanced_url}
+                  annotatedUrl={activeResult.annotated_url}
+                  filename={activeResult.filename}
+                  resultId={activeResult.id}
+                  detections={activeResult.detections}
+                />
+                <MetricsPanel
+                  metrics={activeResult.metrics}
+                  detections={activeResult.detections}
+                  coralHealth={activeResult.coral_health}
+                />
               </div>
-            </div>
-          </>
+            )}
+          </div>
         )}
       </main>
 

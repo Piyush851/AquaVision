@@ -92,19 +92,17 @@ export default function Navbar({
             {!user && (
               <button
                 onClick={onOpenAuth}
-                className={`hidden sm:flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors ${
-                  guestRemaining <= 1
+                className={`hidden sm:flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors ${guestRemaining <= 1
                     ? "border-rose-500/40 bg-rose-500/10 text-rose-300 hover:bg-rose-500/20"
                     : guestRemaining <= 3
-                    ? "border-amber-500/40 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20"
-                    : "border-cyan-500/30 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20"
-                }`}
+                      ? "border-amber-500/40 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20"
+                      : "border-cyan-500/30 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20"
+                  }`}
                 title="Free enhancements remaining in current guest session"
               >
                 <span
-                  className={`h-1.5 w-1.5 rounded-full ${
-                    guestRemaining <= 1 ? "bg-rose-400" : "bg-cyan-400"
-                  } animate-pulse`}
+                  className={`h-1.5 w-1.5 rounded-full ${guestRemaining <= 1 ? "bg-rose-400" : "bg-cyan-400"
+                    } animate-pulse`}
                 />
                 <span>{guestRemaining}/5 Guest Left</span>
               </button>

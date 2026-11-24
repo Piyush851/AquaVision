@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { X, BookOpen, Layers, Award, Users, CheckCircle2, AlertCircle, Clock } from "lucide-react";
 import { getSystemInfo } from "@/lib/api";
-import { SystemInfo } from "@/lib/types";
 
 interface SynopsisModalProps {
   isOpen: boolean;
@@ -12,20 +11,17 @@ interface SynopsisModalProps {
 
 export default function SynopsisModal({ isOpen, onClose }: SynopsisModalProps) {
   const [isOnline, setIsOnline] = useState<boolean | null>(null);
-  const [sysInfo, setSysInfo] = useState<SystemInfo | null>(null);
 
   useEffect(() => {
     let isMounted = true;
     const fetchStatus = async () => {
       try {
-        const info = await getSystemInfo();
+        await getSystemInfo();
         if (isMounted) {
-          setSysInfo(info);
           setIsOnline(true);
         }
       } catch {
         if (isMounted) {
-          setSysInfo(null);
           setIsOnline(false);
         }
       }
@@ -81,7 +77,7 @@ export default function SynopsisModal({ isOpen, onClose }: SynopsisModalProps) {
         {/* Content */}
         <div className="max-h-[75vh] overflow-y-auto p-6 space-y-5 text-xs text-zinc-300">
           {/* Dynamic Backend Status Indicator */}
-          <div className="flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-950 p-3.5">
+          <div className="flex items-center rounded-xl border border-zinc-800 bg-zinc-950 p-3.5">
             <div className="flex items-center gap-2.5">
               {isOnline === null ? (
                 <Clock className="h-4 w-4 text-zinc-400 shrink-0" />
@@ -90,46 +86,27 @@ export default function SynopsisModal({ isOpen, onClose }: SynopsisModalProps) {
               ) : (
                 <AlertCircle className="h-4 w-4 text-rose-400 shrink-0" />
               )}
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold text-zinc-200">
-                    Backend Connection Status:
-                  </span>
-                  <span
-                    className={`font-medium ${
-                      isOnline === null
-                        ? "text-zinc-400"
-                        : isOnline
-                        ? "text-emerald-400"
-                        : "text-rose-400"
-                    }`}
-                  >
-                    {isOnline === null
-                      ? "Checking..."
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-zinc-200">
+                  Backend Connection Status:
+                </span>
+                <span
+                  className={`font-medium ${
+                    isOnline === null
+                      ? "text-zinc-400"
                       : isOnline
-                      ? "Connected"
-                      : "Disconnected (Offline)"}
-                  </span>
-                </div>
-                <p className="text-[11px] text-zinc-500">
-                  {isOnline && sysInfo
-                    ? `Device: ${sysInfo.device.toUpperCase()} • Status: ${sysInfo.model_loaded ? "Model Ready" : "Fallback"}`
-                    : isOnline === false
-                    ? "FastAPI server unreachable. Classical CV fallback will be engaged."
-                    : "Probing REST API endpoint /api/v1/enhance/info..."}
-                </p>
+                      ? "text-emerald-400"
+                      : "text-rose-400"
+                  }`}
+                >
+                  {isOnline === null
+                    ? "Checking..."
+                    : isOnline
+                    ? "Connected"
+                    : "Disconnected"}
+                </span>
               </div>
             </div>
-            {isOnline && (
-              <span className="rounded-full bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-0.5 text-[10px] font-semibold text-emerald-400">
-                Operational
-              </span>
-            )}
-            {isOnline === false && (
-              <span className="rounded-full bg-rose-500/10 border border-rose-500/30 px-2.5 py-0.5 text-[10px] font-semibold text-rose-400">
-                Offline
-              </span>
-            )}
           </div>
 
           <div>

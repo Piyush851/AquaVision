@@ -17,6 +17,7 @@ import {
   Activity,
   ShieldCheck,
   Fish,
+  Maximize2,
 } from "lucide-react";
 import {
   uploadBatchAndEnhance,
@@ -28,7 +29,11 @@ import {
 } from "@/lib/api";
 import { BatchProcessingResponse, EnhancementResponse } from "@/lib/types";
 
-export default function BatchProcessor() {
+interface BatchProcessorProps {
+  onInspectItem?: (item: EnhancementResponse) => void;
+}
+
+export default function BatchProcessor({ onInspectItem }: BatchProcessorProps = {}) {
   const [queuedFiles, setQueuedFiles] = useState<File[]>([]);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -515,6 +520,17 @@ export default function BatchProcessor() {
                         {item.filename}
                       </div>
                       <div className="flex items-center gap-1.5">
+                        {onInspectItem && (
+                          <button
+                            type="button"
+                            onClick={() => onInspectItem(item)}
+                            className="flex items-center gap-1 rounded bg-cyan-950/80 border border-cyan-800/60 px-2 py-1 text-[10px] text-cyan-300 hover:text-white hover:bg-cyan-900 transition-colors"
+                            title="Inspect in Main Side-by-Side Comparison Viewer"
+                          >
+                            <Maximize2 className="h-3 w-3" />
+                            <span>Inspect</span>
+                          </button>
+                        )}
                         <button
                           type="button"
                           onClick={() => handleDownloadSinglePdf(item.id)}

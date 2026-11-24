@@ -151,11 +151,10 @@ export default function ModelSwitcher({ onModelSwitched }: { onModelSwitched?: (
               <button
                 key={m.filename}
                 onClick={() => handleSelectModel(m.filename)}
-                className={`flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-xs transition-colors ${
-                  m.filename === activeModel
+                className={`flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-xs transition-colors ${m.filename === activeModel
                     ? "bg-cyan-950/40 text-cyan-300 border border-cyan-800/40"
                     : "text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200"
-                }`}
+                  }`}
               >
                 <div>
                   <div className="font-medium text-zinc-200">{getModelLabel(m.filename)}</div>

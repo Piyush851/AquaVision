@@ -75,10 +75,10 @@ export default function ProfileModal({
 
   const formattedDate = user.created_at
     ? new Date(user.created_at).toLocaleDateString(undefined, {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      })
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    })
     : "Active Member";
 
   const getInitials = (name: string) => {
@@ -188,11 +188,10 @@ export default function ProfileModal({
                 <Filter className="h-3.5 w-3.5 text-zinc-500 mr-1 shrink-0" />
                 <button
                   onClick={() => setModelFilter("all")}
-                  className={`rounded-lg px-2.5 py-1 transition-all shrink-0 ${
-                    modelFilter === "all"
+                  className={`rounded-lg px-2.5 py-1 transition-all shrink-0 ${modelFilter === "all"
                       ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
                       : "bg-zinc-900 text-zinc-400 border border-zinc-800 hover:text-zinc-200"
-                  }`}
+                    }`}
                 >
                   All ({history.length})
                 </button>
@@ -200,11 +199,10 @@ export default function ProfileModal({
                   <button
                     key={m}
                     onClick={() => setModelFilter(m)}
-                    className={`rounded-lg px-2.5 py-1 transition-all shrink-0 ${
-                      modelFilter.toLowerCase() === m.toLowerCase()
+                    className={`rounded-lg px-2.5 py-1 transition-all shrink-0 ${modelFilter.toLowerCase() === m.toLowerCase()
                         ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
                         : "bg-zinc-900 text-zinc-400 border border-zinc-800 hover:text-zinc-200"
-                    }`}
+                      }`}
                   >
                     {m}
                   </button>
@@ -232,12 +230,12 @@ export default function ProfileModal({
               {filteredHistory.map((item) => {
                 const itemDate = item.created_at
                   ? new Date(item.created_at).toLocaleString(undefined, {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })
                   : "Recorded";
 
                 return (
