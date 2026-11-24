@@ -8,11 +8,6 @@ import {
   Copy,
   Check,
   RefreshCw,
-  Award,
-  Zap,
-  Activity,
-  Layers,
-  Sparkles,
   Info
 } from "lucide-react";
 import { fetchBenchmarkResults, downloadBenchmarkCSV, getBenchmarkLatex } from "@/lib/api";
@@ -247,7 +242,6 @@ export default function BenchmarkModal({ isOpen, onClose }: BenchmarkModalProps)
                 <tbody className="divide-y divide-zinc-850">
                   {data?.models.map((m) => {
                     const isFlagship = m.id === "combined";
-                    const isClassical = m.id === "classical";
                     
                     // Domain specific values or overall mean
                     const domainData = activeDomain !== "overall" && m.domain_breakdown ? m.domain_breakdown[activeDomain] : null;
@@ -268,21 +262,12 @@ export default function BenchmarkModal({ isOpen, onClose }: BenchmarkModalProps)
                         }`}
                       >
                         <td className="py-3 px-4">
-                          <div className="flex items-center gap-2">
-                            {isFlagship ? (
-                              <Award className="w-4 h-4 text-cyan-400 shrink-0" />
-                            ) : isClassical ? (
-                              <Zap className="w-4 h-4 text-amber-400 shrink-0" />
-                            ) : (
-                              <Layers className="w-4 h-4 text-zinc-500 shrink-0" />
-                            )}
-                            <div>
-                              <div className={`font-semibold ${isFlagship ? "text-cyan-300" : "text-zinc-200"}`}>
-                                {m.name}
-                              </div>
-                              <div className="text-[10px] text-zinc-500 font-mono">
-                                {m.checkpoint || "Rule-based Fallback"}
-                              </div>
+                          <div>
+                            <div className={`font-semibold ${isFlagship ? "text-cyan-300" : "text-zinc-200"}`}>
+                              {m.name}
+                            </div>
+                            <div className="text-[10px] text-zinc-500 font-mono">
+                              {m.checkpoint || "Rule-based Fallback"}
                             </div>
                           </div>
                         </td>
@@ -322,8 +307,7 @@ export default function BenchmarkModal({ isOpen, onClose }: BenchmarkModalProps)
             
             {/* Finding Card 1 */}
             <div className="p-4 rounded-xl border border-cyan-900/40 bg-zinc-900/40 space-y-2">
-              <div className="flex items-center gap-2 text-cyan-400 text-xs font-semibold">
-                <Sparkles className="w-4 h-4" />
+              <div className="text-cyan-400 text-xs font-semibold">
                 <span>Underwater Optical Domain Adaptation</span>
               </div>
               <p className="text-xs text-zinc-400 leading-relaxed">
@@ -333,8 +317,7 @@ export default function BenchmarkModal({ isOpen, onClose }: BenchmarkModalProps)
 
             {/* Finding Card 2 */}
             <div className="p-4 rounded-xl border border-zinc-800 bg-zinc-900/40 space-y-2">
-              <div className="flex items-center gap-2 text-emerald-400 text-xs font-semibold">
-                <Activity className="w-4 h-4" />
+              <div className="text-emerald-400 text-xs font-semibold">
                 <span>Real-Time Edge Preservation</span>
               </div>
               <p className="text-xs text-zinc-400 leading-relaxed">
@@ -356,7 +339,7 @@ export default function BenchmarkModal({ isOpen, onClose }: BenchmarkModalProps)
 
         {/* Modal Footer */}
         <div className="flex items-center justify-between px-6 py-3.5 border-t border-zinc-800 bg-zinc-900/60 text-xs text-zinc-400">
-          <span>AquaVision AI &bull; BTU Ajmer Final Year Capstone</span>
+          <span>AquaVision AI</span>
           <button
             onClick={onClose}
             className="px-4 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 font-medium text-zinc-950 transition-colors"

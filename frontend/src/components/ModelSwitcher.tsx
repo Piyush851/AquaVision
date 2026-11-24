@@ -159,9 +159,6 @@ export default function ModelSwitcher({ onModelSwitched }: { onModelSwitched?: (
               >
                 <div>
                   <div className="font-medium text-zinc-200">{getModelLabel(m.filename)}</div>
-                  <div className="text-[10px] text-zinc-500 font-mono mt-0.5">
-                    {m.filename} &bull; {m.size_mb} MB
-                  </div>
                 </div>
                 {m.filename === activeModel && (
                   <Check className="h-4 w-4 text-cyan-400 shrink-0" />

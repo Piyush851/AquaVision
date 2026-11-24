@@ -5,7 +5,7 @@ import Navbar from "@/components/Navbar";
 import ImageUploader from "@/components/ImageUploader";
 import ComparisonViewer from "@/components/ComparisonViewer";
 import MetricsPanel from "@/components/MetricsPanel";
-import HistorySection from "@/components/HistorySection";
+// import HistorySection from "@/components/HistorySection";
 import SynopsisModal from "@/components/SynopsisModal";
 import AuthModal from "@/components/AuthModal";
 import ProfileModal from "@/components/ProfileModal";
@@ -22,7 +22,6 @@ import {
 } from "@/lib/api";
 import {
   EnhancementResponse,
-  HistoryRecord,
   User,
   UserHistoryRecord,
 } from "@/lib/types";
@@ -33,7 +32,6 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [activeResult, setActiveResult] = useState<EnhancementResponse | null>(null);
-  const [history, setHistory] = useState<HistoryRecord[]>([]);
   const [isSynopsisOpen, setIsSynopsisOpen] = useState<boolean>(false);
 
   // Authentication & Guest Quota State
@@ -71,7 +69,6 @@ export default function Home() {
       // 3. Fetch public enhancement history
       try {
         const records = await getHistory();
-        setHistory(records);
         if (records.length > 0) {
           const latest = records[0];
           setActiveResult({
@@ -110,10 +107,6 @@ export default function Home() {
       const response = await uploadAndEnhance(file, forceClassical);
       setActiveResult(response);
 
-      // Refresh public history
-      const updatedHistory = await getHistory();
-      setHistory(updatedHistory);
-
       // Sync guest quota if user is not authenticated
       if (!user) {
         try {
@@ -142,29 +135,6 @@ export default function Home() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleSelectHistory = (record: HistoryRecord) => {
-    setActiveResult({
-      id: record.id,
-      filename: record.filename || record.enhanced_file,
-      original_url: record.original_url || record.enhanced_url,
-      enhanced_url: record.enhanced_url,
-      annotated_url: record.annotated_url,
-      detections: record.detections,
-      coral_health: record.coral_health,
-      metrics: record.metrics || {
-        inference_mode: "deep-learning",
-        device: "system",
-        processing_time_seconds: 0.12,
-        estimated_psnr: 24.5,
-        uiqm: 3.42,
-        uciqe: 0.61,
-        input_path: record.original_url || "",
-        output_path: record.enhanced_url,
-        original_dimensions: "Original",
-      },
-    });
   };
 
   const handleSelectUserRecord = (record: UserHistoryRecord) => {
@@ -258,9 +228,6 @@ export default function Home() {
           >
             <Film className="h-4 w-4 text-cyan-400" />
             <span>Subsea Video Enhancement</span>
-            <span className="rounded bg-cyan-950/80 border border-cyan-800/60 px-1.5 py-0.5 text-[10px] font-mono text-cyan-300">
-              Anti-Flicker GPU
-            </span>
           </button>
 
           <button
@@ -273,9 +240,6 @@ export default function Home() {
           >
             <Layers className="h-4 w-4 text-cyan-400" />
             <span>Batch Survey Processing</span>
-            <span className="rounded bg-cyan-950/80 border border-cyan-800/60 px-1.5 py-0.5 text-[10px] font-mono text-cyan-300">
-              ZIP &amp; PDF Report
-            </span>
           </button>
         </div>
 
@@ -337,15 +301,6 @@ export default function Home() {
                   </div>
                 )}
               </div>
-            </div>
-
-            {/* History Gallery */}
-            <div className="mt-8">
-              <HistorySection
-                history={history}
-                onSelect={handleSelectHistory}
-                activeId={activeResult?.id}
-              />
             </div>
           </>
         )}

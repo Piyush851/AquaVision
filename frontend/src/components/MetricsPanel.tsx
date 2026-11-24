@@ -1,4 +1,3 @@
-import { Activity, Clock, Layers, Sparkles, Droplets, Eye, Fish, AlertTriangle, ShieldAlert, CheckCircle2, HeartPulse } from "lucide-react";
 import { EnhancementMetrics, MarineDetection, CoralHealthAssessment } from "@/lib/types";
 
 interface MetricsPanelProps {
@@ -22,19 +21,12 @@ export default function MetricsPanel({ metrics, detections, coralHealth }: Metri
           <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
             Inference & Optical Telemetry
           </h3>
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-medium text-emerald-400 border border-emerald-500/20">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-              Device: {metrics.device.toUpperCase()}
-            </span>
-          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
           {/* Relative PSNR Gain */}
           <div className="rounded-lg border border-zinc-800/80 bg-zinc-950 p-3 hover:border-cyan-500/40 transition-colors">
-            <div className="flex items-center gap-1.5 text-zinc-400">
-              <Activity className="h-3.5 w-3.5 text-cyan-400" />
+            <div className="flex items-center text-zinc-400">
               <span className="text-xs">Est. PSNR</span>
             </div>
             <div className="mt-1 flex items-baseline gap-1">
@@ -48,8 +40,7 @@ export default function MetricsPanel({ metrics, detections, coralHealth }: Metri
 
           {/* UIQM Score */}
           <div className="rounded-lg border border-zinc-800/80 bg-zinc-950 p-3 hover:border-cyan-500/40 transition-colors">
-            <div className="flex items-center gap-1.5 text-zinc-400">
-              <Droplets className="h-3.5 w-3.5 text-cyan-400" />
+            <div className="flex items-center text-zinc-400">
               <span className="text-xs">UIQM</span>
             </div>
             <div className="mt-1 flex items-baseline gap-1">
@@ -63,8 +54,7 @@ export default function MetricsPanel({ metrics, detections, coralHealth }: Metri
 
           {/* UCIQE Score */}
           <div className="rounded-lg border border-zinc-800/80 bg-zinc-950 p-3 hover:border-cyan-500/40 transition-colors">
-            <div className="flex items-center gap-1.5 text-zinc-400">
-              <Eye className="h-3.5 w-3.5 text-cyan-400" />
+            <div className="flex items-center text-zinc-400">
               <span className="text-xs">UCIQE</span>
             </div>
             <div className="mt-1 flex items-baseline gap-1">
@@ -78,8 +68,7 @@ export default function MetricsPanel({ metrics, detections, coralHealth }: Metri
 
           {/* Latency */}
           <div className="rounded-lg border border-zinc-800/80 bg-zinc-950 p-3 hover:border-cyan-500/40 transition-colors">
-            <div className="flex items-center gap-1.5 text-zinc-400">
-              <Clock className="h-3.5 w-3.5 text-cyan-400" />
+            <div className="flex items-center text-zinc-400">
               <span className="text-xs">Latency</span>
             </div>
             <div className="mt-1 flex items-baseline gap-1">
@@ -93,8 +82,7 @@ export default function MetricsPanel({ metrics, detections, coralHealth }: Metri
 
           {/* Engine Method */}
           <div className="rounded-lg border border-zinc-800/80 bg-zinc-950 p-3 hover:border-cyan-500/40 transition-colors">
-            <div className="flex items-center gap-1.5 text-zinc-400">
-              <Sparkles className="h-3.5 w-3.5 text-cyan-400" />
+            <div className="flex items-center text-zinc-400">
               <span className="text-xs">Method</span>
             </div>
             <div className="mt-1 truncate text-sm font-semibold tracking-tight text-zinc-100">
@@ -107,8 +95,7 @@ export default function MetricsPanel({ metrics, detections, coralHealth }: Metri
 
           {/* Resolution & Adaptive Strategy */}
           <div className="rounded-lg border border-zinc-800/80 bg-zinc-950 p-3 hover:border-cyan-500/40 transition-colors">
-            <div className="flex items-center gap-1.5 text-zinc-400">
-              <Layers className="h-3.5 w-3.5 text-cyan-400" />
+            <div className="flex items-center text-zinc-400">
               <span className="text-xs">Resolution Profile</span>
             </div>
             <div className="mt-1 text-sm font-semibold tracking-tight text-zinc-100 truncate">
@@ -125,7 +112,7 @@ export default function MetricsPanel({ metrics, detections, coralHealth }: Metri
         </div>
       </div>
 
-      {/* Phase 2: Marine Biological Intelligence & Coral Reef Health (Milestone B) */}
+      {/* Marine Biological Intelligence & Coral Reef Health */}
       {(hasDetections || hasCoral) && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           
@@ -133,9 +120,8 @@ export default function MetricsPanel({ metrics, detections, coralHealth }: Metri
           <div className="rounded-xl border border-cyan-800/40 bg-zinc-900/60 p-4 backdrop-blur-sm space-y-3">
             <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
               <div className="flex items-center gap-2">
-                <Fish className="w-4 h-4 text-cyan-400" />
                 <h4 className="text-xs font-semibold uppercase tracking-wider text-zinc-200">
-                  Marine Ecological Detection (Phase 2)
+                  Marine Ecological Detection
                 </h4>
               </div>
               <span className="rounded-full bg-cyan-950/80 border border-cyan-700/50 px-2 py-0.5 text-[10px] font-mono text-cyan-300">
@@ -164,13 +150,6 @@ export default function MetricsPanel({ metrics, detections, coralHealth }: Metri
                             : "bg-emerald-950/50 text-emerald-300 border-emerald-800/60"
                         }`}
                       >
-                        {isBleached ? (
-                          <AlertTriangle className="w-3 h-3 text-rose-400" />
-                        ) : isDebris ? (
-                          <ShieldAlert className="w-3 h-3 text-amber-400" />
-                        ) : (
-                          <CheckCircle2 className="w-3 h-3 text-cyan-400" />
-                        )}
                         <span>{d.label}</span>
                         <span className="text-[10px] opacity-75 font-mono">
                           {Math.round(d.confidence * 100)}%
@@ -192,7 +171,6 @@ export default function MetricsPanel({ metrics, detections, coralHealth }: Metri
           <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4 backdrop-blur-sm space-y-3">
             <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
               <div className="flex items-center gap-2">
-                <HeartPulse className="w-4 h-4 text-emerald-400" />
                 <h4 className="text-xs font-semibold uppercase tracking-wider text-zinc-200">
                   Coral Bleaching Metrology
                 </h4>

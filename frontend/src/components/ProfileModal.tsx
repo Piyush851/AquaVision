@@ -11,7 +11,6 @@ import {
   Eye,
   Filter,
   Clock,
-  ShieldCheck,
   CheckCircle2,
 } from "lucide-react";
 import { getUserHistory, resolveImageUrl } from "@/lib/api";
@@ -164,15 +163,6 @@ export default function ProfileModal({
                 </span>
                 <span className="text-lg font-bold text-cyan-400">
                   {user.total_enhancements || history.length}
-                </span>
-              </div>
-              <div className="rounded-xl border border-zinc-800 bg-zinc-900/90 px-4 py-2 text-center">
-                <span className="text-[10px] uppercase tracking-wider text-zinc-500 block">
-                  Quota Status
-                </span>
-                <span className="text-xs font-semibold text-emerald-400 flex items-center justify-center gap-1">
-                  <ShieldCheck className="h-3.5 w-3.5" />
-                  Unlimited
                 </span>
               </div>
             </div>

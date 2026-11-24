@@ -4,16 +4,13 @@ import { useEffect, useState, useRef } from "react";
 import {
   Waves,
   Info,
-  ShieldCheck,
   BarChart3,
   User as UserIcon,
   LogOut,
   ChevronDown,
 } from "lucide-react";
-import { getSystemInfo } from "@/lib/api";
-import { SystemInfo, User } from "@/lib/types";
+import { User } from "@/lib/types";
 import ModelSwitcher from "./ModelSwitcher";
-import CompatibilityModal from "./CompatibilityModal";
 import BenchmarkModal from "./BenchmarkModal";
 
 interface NavbarProps {
@@ -33,9 +30,6 @@ export default function Navbar({
   onOpenProfile,
   onLogout,
 }: NavbarProps) {
-  const [sysInfo, setSysInfo] = useState<SystemInfo | null>(null);
-  const [isOnline, setIsOnline] = useState<boolean | null>(null);
-  const [isCompatOpen, setIsCompatOpen] = useState<boolean>(false);
   const [isBenchmarkOpen, setIsBenchmarkOpen] = useState<boolean>(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState<boolean>(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -49,41 +43,6 @@ export default function Navbar({
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const checkStatus = async () => {
-    try {
-      const info = await getSystemInfo();
-      setSysInfo(info);
-      setIsOnline(true);
-    } catch {
-      setSysInfo(null);
-      setIsOnline(false);
-    }
-  };
-
-  useEffect(() => {
-    let isMounted = true;
-    const fetchStatus = async () => {
-      try {
-        const info = await getSystemInfo();
-        if (isMounted) {
-          setSysInfo(info);
-          setIsOnline(true);
-        }
-      } catch {
-        if (isMounted) {
-          setSysInfo(null);
-          setIsOnline(false);
-        }
-      }
-    };
-    fetchStatus();
-    const interval = setInterval(fetchStatus, 15000);
-    return () => {
-      isMounted = false;
-      clearInterval(interval);
-    };
   }, []);
 
   const getInitials = (name: string) => {
@@ -117,7 +76,7 @@ export default function Navbar({
 
           <div className="flex items-center gap-2.5 sm:gap-3">
             {/* Model Switcher */}
-            <ModelSwitcher onModelSwitched={checkStatus} />
+            <ModelSwitcher />
 
             {/* Benchmark & Metrology Trigger */}
             <button
@@ -128,56 +87,6 @@ export default function Navbar({
               <BarChart3 className="h-3.5 w-3.5 text-cyan-400" />
               <span className="hidden md:inline">Benchmarks</span>
             </button>
-
-            {/* Compatibility Trigger */}
-            <button
-              onClick={() => setIsCompatOpen(true)}
-              className="flex items-center gap-1.5 rounded-lg border border-zinc-800 bg-zinc-900 px-2.5 py-1.5 text-xs font-medium text-zinc-300 transition-colors hover:border-zinc-700 hover:bg-zinc-800 hover:text-zinc-100"
-              title="System Specs & Hardware Compatibility"
-            >
-              <ShieldCheck className="h-3.5 w-3.5 text-cyan-400" />
-              <span className="hidden md:inline">Compatibility</span>
-            </button>
-
-            {/* Backend Connectivity Status Indicator */}
-            <div
-              className={`flex items-center gap-2 rounded-full border px-2.5 py-1 text-xs transition-colors ${
-                isOnline === null
-                  ? "border-zinc-800 bg-zinc-900/80 text-zinc-400"
-                  : isOnline
-                  ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-                  : "border-rose-500/30 bg-rose-500/10 text-rose-300"
-              }`}
-              title={
-                isOnline === null
-                  ? "Connecting to backend server..."
-                  : isOnline
-                  ? "Backend Connected"
-                  : "Backend Disconnected — Server Offline"
-              }
-            >
-              <span className="relative flex h-2 w-2">
-                {isOnline && (
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                )}
-                <span
-                  className={`relative inline-flex h-2 w-2 rounded-full ${
-                    isOnline === null
-                      ? "bg-zinc-500 animate-pulse"
-                      : isOnline
-                      ? "bg-emerald-400"
-                      : "bg-rose-500"
-                  }`}
-                />
-              </span>
-              <span className="text-[11px] font-medium sm:text-xs">
-                {isOnline === null
-                  ? "Connecting"
-                  : isOnline
-                  ? "Connected"
-                  : "Disconnected"}
-              </span>
-            </div>
 
             {/* Guest Quota Badge (if unauthenticated) */}
             {!user && (
@@ -237,9 +146,6 @@ export default function Navbar({
                       <p className="text-[11px] text-zinc-400 truncate">
                         {user.email}
                       </p>
-                      <span className="mt-1 inline-flex items-center gap-1 rounded bg-cyan-950/80 px-1.5 py-0.5 text-[9px] font-medium text-cyan-400 border border-cyan-800/40">
-                        Unlimited Account
-                      </span>
                     </div>
 
                     <button
@@ -279,14 +185,6 @@ export default function Navbar({
           </div>
         </div>
       </header>
-
-      {/* Compatibility Criteria Modal */}
-      <CompatibilityModal
-        isOpen={isCompatOpen}
-        onClose={() => setIsCompatOpen(false)}
-        sysInfo={sysInfo}
-        isOnline={isOnline}
-      />
 
       {/* Benchmark Metrology Modal */}
       <BenchmarkModal

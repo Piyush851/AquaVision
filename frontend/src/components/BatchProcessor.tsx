@@ -17,7 +17,6 @@ import {
   Activity,
   ShieldCheck,
   Fish,
-  Zap,
 } from "lucide-react";
 import {
   uploadBatchAndEnhance,
@@ -297,7 +296,6 @@ export default function BatchProcessor() {
         <div className="flex flex-col justify-between gap-4 lg:col-span-7">
           <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-5 backdrop-blur-sm">
             <h3 className="mb-3 text-sm font-semibold text-zinc-100 flex items-center gap-2">
-              <Zap className="h-4 w-4 text-amber-400" />
               Pipeline Execution Engine
             </h3>
 
@@ -313,7 +311,7 @@ export default function BatchProcessor() {
                         : "bg-cyan-950/80 border border-cyan-800/60 text-cyan-300"
                     }`}
                   >
-                    {forceClassical ? "Classical Fallback" : "AquaVisionNet Deep"}
+                    {forceClassical ? "Classical Fallback" : "Deep Learning"}
                   </span>
                 </div>
                 <p className="text-[11px] text-zinc-400 mb-2.5 leading-relaxed">
@@ -341,7 +339,7 @@ export default function BatchProcessor() {
                         : "bg-zinc-800 border border-zinc-700 text-zinc-400"
                     }`}
                   >
-                    {detectMarine ? "YOLOv8 Active" : "Disabled"}
+                    {detectMarine ? "Enabled" : "Disabled"}
                   </span>
                 </div>
                 <p className="text-[11px] text-zinc-400 mb-2.5 leading-relaxed">
@@ -372,10 +370,7 @@ export default function BatchProcessor() {
             </div>
 
             {/* Execute Button */}
-            <div className="mt-5 flex items-center justify-between">
-              <div className="text-[11px] text-zinc-400">
-                Investigator: <span className="text-zinc-200">Piyush Saini (23EEAIT043)</span>
-              </div>
+            <div className="mt-5 flex items-center justify-end">
               <button
                 type="button"
                 onClick={handleExecuteBatch}

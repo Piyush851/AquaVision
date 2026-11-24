@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { X, Lock, Mail, User as UserIcon, Eye, EyeOff, Sparkles, CheckCircle2, ShieldCheck, AlertCircle } from "lucide-react";
+import { X, Lock, Mail, User as UserIcon, Eye, EyeOff, CheckCircle2, ShieldCheck, AlertCircle } from "lucide-react";
 import { loginUser, signupUser } from "@/lib/api";
 import { User } from "@/lib/types";
 
@@ -90,7 +90,7 @@ export default function AuthModal({
         {/* Header */}
         <div className="mb-6 text-center">
           <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">
-            <Sparkles className="h-6 w-6" />
+            <UserIcon className="h-6 w-6" />
           </div>
           <h2 className="text-xl font-bold tracking-tight text-zinc-100">
             {activeTab === "signup" ? "Join AquaVision AI" : "Welcome Back"}
