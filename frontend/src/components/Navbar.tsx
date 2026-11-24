@@ -3,9 +3,6 @@
 import { useEffect, useState, useRef } from "react";
 import {
   Waves,
-  Cpu,
-  CheckCircle2,
-  AlertCircle,
   Info,
   ShieldCheck,
   BarChart3,
