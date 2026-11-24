@@ -8,8 +8,6 @@ from sqlalchemy import create_engine
 from sqlalchemy.exc import DBAPIError, OperationalError, SQLAlchemyError
 from sqlalchemy.orm import Session, sessionmaker
 
-from urllib.parse import quote_plus
-
 from app.database.models import Base
 
 logger = logging.getLogger("aquavision.database")
