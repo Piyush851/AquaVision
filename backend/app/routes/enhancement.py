@@ -2,14 +2,21 @@ import json
 import logging
 import time
 import uuid
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Header, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session
 
+from app.database.cache import check_guest_quota, increment_guest_enhancement_count
+from app.database.connection import get_db
+from app.database.models import EnhancementRecord, GuestUsage, User
 from app.model.inference import EnhancerInference
+from app.utils.auth import get_current_user_optional
 
 logger = logging.getLogger("aquavision.api")
 router = APIRouter(prefix="/api/v1/enhance", tags=["Enhancement"])
@@ -37,15 +44,28 @@ class EnhancementResponse(BaseModel):
 async def upload_and_enhance(
     file: UploadFile = File(...),
     force_classical: bool = False,
-    detect_marine: bool = True
+    detect_marine: bool = True,
+    x_guest_id: str | None = Header(None, alias="X-Guest-ID"),
+    current_user: User | None = Depends(get_current_user_optional),
+    db: Session = Depends(get_db)
 ):
     """
-    Accepts an underwater image file, runs neural network enhancement,
-    performs marine species detection & coral bleaching health assessment,
-    saves output files, and returns accessible URLs and telemetry.
+    Accepts an underwater image file, checks guest quota (max 5 for unauthenticated users),
+    runs neural network enhancement, performs marine species detection & coral health assessment,
+    catalogs training metadata into PostgreSQL, and returns URLs and telemetry.
     """
     if not file.content_type or not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="Uploaded file must be a valid image.")
+
+    # 1. Quota Verification for Guests
+    gid = x_guest_id or "anonymous_guest"
+    if not current_user:
+        is_allowed, used, max_allowed = check_guest_quota(gid)
+        if not is_allowed:
+            raise HTTPException(
+                status_code=403,
+                detail=f"Guest enhancement quota reached ({used}/{max_allowed}). Please sign in or create a free account to continue unlimited enhancements."
+            )
         
     file_id = str(uuid.uuid4())[:8]
     ext = Path(file.filename).suffix.lower() or ".jpg"
@@ -93,7 +113,55 @@ async def upload_and_enhance(
             except (RuntimeError, ValueError, OSError) as det_err:
                 logger.warning("Marine intelligence processing error: %s", det_err)
 
-        # Persist execution metadata sidecar for history & scientific audit
+        # 2. Increment Guest Usage if unauthenticated
+        if not current_user:
+            new_count = increment_guest_enhancement_count(gid)
+            try:
+                g_usage = db.query(GuestUsage).filter(GuestUsage.guest_id == gid).first()
+                if not g_usage:
+                    g_usage = GuestUsage(
+                        guest_id=gid,
+                        enhancement_count=new_count,
+                        created_at=datetime.now(UTC),
+                        last_activity_at=datetime.now(UTC)
+                    )
+                    db.add(g_usage)
+                else:
+                    g_usage.enhancement_count = new_count
+                    g_usage.last_activity_at = datetime.now(UTC)
+                db.commit()
+            except (SQLAlchemyError, OSError, ValueError) as usage_err:
+                logger.warning("Could not persist guest usage: %s", usage_err)
+
+        # 3. Universal Training Dataset Persistence (Requirement 10)
+        try:
+            record = EnhancementRecord(
+                id=file_id,
+                user_id=current_user.id if current_user else None,
+                guest_session_id=gid if not current_user else None,
+                original_filename=file.filename or raw_name,
+                raw_image_path=f"/uploads/{raw_name}",
+                enhanced_image_path=f"/outputs/{enhanced_name}",
+                annotated_image_path=f"/outputs/{annotated_name}" if annotated_name else None,
+                model_name=str(metrics.get("active_weights", "AquaVisionNet (Unified)")),
+                inference_mode=str(metrics.get("inference_mode", "deep-learning")),
+                uiqm_score=float(metrics.get("uiqm", 0.0)) if metrics.get("uiqm") is not None else None,
+                uciqe_score=float(metrics.get("uciqe", 0.0)) if metrics.get("uciqe") is not None else None,
+                psnr_score=float(metrics.get("estimated_psnr", 0.0)) if metrics.get("estimated_psnr") is not None else None,
+                metrics=metrics,
+                detections=detections,
+                coral_health=coral_health,
+                is_flagged_for_training=True,
+                created_at=datetime.now(UTC)
+            )
+            db.add(record)
+            db.commit()
+            logger.info("Cataloged enhancement %s to database (user_id=%s, for_training=True)", file_id, current_user.id if current_user else "guest")
+        except (SQLAlchemyError, OSError, ValueError) as db_err:
+            logger.warning("Failed to catalog image into database: %s", db_err)
+            db.rollback()
+
+        # 4. Persist execution metadata sidecar for history & scientific audit
         meta_data = {
             "id": file_id,
             "filename": file.filename or raw_name,

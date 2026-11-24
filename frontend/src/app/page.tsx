@@ -7,11 +7,25 @@ import ComparisonViewer from "@/components/ComparisonViewer";
 import MetricsPanel from "@/components/MetricsPanel";
 import HistorySection from "@/components/HistorySection";
 import SynopsisModal from "@/components/SynopsisModal";
+import AuthModal from "@/components/AuthModal";
+import ProfileModal from "@/components/ProfileModal";
 import Footer from "@/components/Footer";
 import VideoProcessor from "@/components/VideoProcessor";
 import BatchProcessor from "@/components/BatchProcessor";
-import { uploadAndEnhance, getHistory } from "@/lib/api";
-import { EnhancementResponse, HistoryRecord } from "@/lib/types";
+import {
+  uploadAndEnhance,
+  getHistory,
+  getCurrentUserProfile,
+  getGuestStatus,
+  logoutUser,
+  getStoredUser,
+} from "@/lib/api";
+import {
+  EnhancementResponse,
+  HistoryRecord,
+  User,
+  UserHistoryRecord,
+} from "@/lib/types";
 import { AlertCircle, Image as ImageIcon, Film, Layers } from "lucide-react";
 
 export default function Home() {
@@ -22,13 +36,42 @@ export default function Home() {
   const [history, setHistory] = useState<HistoryRecord[]>([]);
   const [isSynopsisOpen, setIsSynopsisOpen] = useState<boolean>(false);
 
-  // Load history on mount
+  // Authentication & Guest Quota State
+  const [user, setUser] = useState<User | null>(null);
+  const [guestRemaining, setGuestRemaining] = useState<number>(5);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false);
+  const [isQuotaTriggered, setIsQuotaTriggered] = useState<boolean>(false);
+
+  // Load user session, guest quota, and initial history on mount
   useEffect(() => {
-    async function fetchInitialHistory() {
+    async function initSessionAndData() {
+      // 1. Check local session and validate with backend
+      try {
+        const stored = getStoredUser();
+        if (stored) {
+          setUser(stored);
+        }
+        const profile = await getCurrentUserProfile();
+        if (profile) {
+          setUser(profile);
+        }
+      } catch {
+        setUser(null);
+      }
+
+      // 2. Fetch guest status (remaining enhancements)
+      try {
+        const guestStatus = await getGuestStatus();
+        setGuestRemaining(guestStatus.remaining);
+      } catch (guestErr) {
+        console.warn("Could not fetch guest status:", guestErr);
+      }
+
+      // 3. Fetch public enhancement history
       try {
         const records = await getHistory();
         setHistory(records);
-        // If items exist and no active result, load the most recent one as initial view
         if (records.length > 0) {
           const latest = records[0];
           setActiveResult({
@@ -56,7 +99,8 @@ export default function Home() {
         console.warn("Could not fetch initial history:", err);
       }
     }
-    fetchInitialHistory();
+
+    initSessionAndData();
   }, []);
 
   const handleProcess = async (file: File, forceClassical: boolean) => {
@@ -66,15 +110,35 @@ export default function Home() {
       const response = await uploadAndEnhance(file, forceClassical);
       setActiveResult(response);
 
-      // Refresh history
+      // Refresh public history
       const updatedHistory = await getHistory();
       setHistory(updatedHistory);
+
+      // Sync guest quota if user is not authenticated
+      if (!user) {
+        try {
+          const guestStatus = await getGuestStatus();
+          setGuestRemaining(guestStatus.remaining);
+        } catch {
+          // Ignore
+        }
+      }
     } catch (err: unknown) {
       const message =
         err instanceof Error
           ? err.message
           : "Failed to process image. Ensure backend is running.";
       setError(message);
+
+      // If guest quota exhausted, automatically prompt AuthModal
+      if (
+        message.toLowerCase().includes("quota reached") ||
+        message.toLowerCase().includes("limit reached") ||
+        message.toLowerCase().includes("403")
+      ) {
+        setIsQuotaTriggered(true);
+        setIsAuthModalOpen(true);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -103,9 +167,61 @@ export default function Home() {
     });
   };
 
+  const handleSelectUserRecord = (record: UserHistoryRecord) => {
+    setActiveTab("image");
+    setIsProfileModalOpen(false);
+    setActiveResult({
+      id: record.id,
+      filename: record.filename,
+      original_url: record.raw_url,
+      enhanced_url: record.enhanced_url,
+      annotated_url: record.annotated_url || undefined,
+      detections: record.detections || undefined,
+      coral_health: record.coral_health || undefined,
+      metrics: record.metrics || {
+        inference_mode: record.inference_mode || "deep-learning",
+        device: "system",
+        processing_time_seconds: 0.12,
+        estimated_psnr: record.psnr ?? 24.5,
+        uiqm: record.uiqm ?? 3.42,
+        uciqe: record.uciqe ?? 0.61,
+        input_path: record.raw_url,
+        output_path: record.enhanced_url,
+        original_dimensions: "Original",
+      },
+    });
+  };
+
+  const handleLogout = async () => {
+    await logoutUser();
+    setUser(null);
+    try {
+      const guestStatus = await getGuestStatus();
+      setGuestRemaining(guestStatus.remaining);
+    } catch {
+      setGuestRemaining(5);
+    }
+  };
+
+  const handleAuthSuccess = (authedUser: User) => {
+    setUser(authedUser);
+    setIsAuthModalOpen(false);
+    setIsQuotaTriggered(false);
+  };
+
   return (
     <div className="flex min-h-screen flex-col bg-zinc-950 text-zinc-100">
-      <Navbar onOpenSynopsis={() => setIsSynopsisOpen(true)} />
+      <Navbar
+        onOpenSynopsis={() => setIsSynopsisOpen(true)}
+        user={user}
+        guestRemaining={guestRemaining}
+        onOpenAuth={() => {
+          setIsQuotaTriggered(false);
+          setIsAuthModalOpen(true);
+        }}
+        onOpenProfile={() => setIsProfileModalOpen(true)}
+        onLogout={handleLogout}
+      />
 
       <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6">
         {/* Minimal Hero Header */}
@@ -240,6 +356,23 @@ export default function Home() {
       <SynopsisModal
         isOpen={isSynopsisOpen}
         onClose={() => setIsSynopsisOpen(false)}
+      />
+
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => {
+          setIsAuthModalOpen(false);
+          setIsQuotaTriggered(false);
+        }}
+        onSuccess={handleAuthSuccess}
+        isQuotaTriggered={isQuotaTriggered}
+      />
+
+      <ProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        user={user}
+        onSelectRecord={handleSelectUserRecord}
       />
     </div>
   );

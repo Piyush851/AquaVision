@@ -1,6 +1,24 @@
-version: "3.8"
-
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: aquavision-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: aquavision
+      POSTGRES_USER: aquavision_user
+      POSTGRES_PASSWORD: "piyush@2004"
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aquavision_user -d aquavision"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - aquavision-net
+
   backend:
     build:
       context: .
@@ -12,9 +30,14 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - CORS_ORIGINS=http://localhost:3000,http://frontend:3000
+      - DATABASE_URL=postgresql://aquavision_user:piyush%402004@postgres:5432/aquavision
+      - JWT_SECRET=aquavision_jwt_secret_key_2026_super_secure_marine_vision
     volumes:
       - backend-uploads:/app/backend/uploads
       - backend-outputs:/app/backend/outputs
+    depends_on:
+      postgres:
+        condition: service_healthy
     networks:
       - aquavision-net
 
@@ -36,6 +59,7 @@ services:
 volumes:
   backend-uploads:
   backend-outputs:
+  postgres-data:
 
 networks:
   aquavision-net:

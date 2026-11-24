@@ -15,6 +15,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "AquaVision — Underwater Image Enhancement",
   description: "AI-powered underwater image enhancement and restoration system",
+  icons: {
+    icon: "/icon.svg",
+  },
 };
 
 export default function RootLayout({

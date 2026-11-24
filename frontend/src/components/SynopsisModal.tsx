@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { X, BookOpen, Layers, Award, Users } from "lucide-react";
 
 interface SynopsisModalProps {
@@ -8,11 +9,27 @@ interface SynopsisModalProps {
 }
 
 export default function SynopsisModal({ isOpen, onClose }: SynopsisModalProps) {
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    if (isOpen) {
+      window.addEventListener("keydown", handleKeyDown);
+      return () => window.removeEventListener("keydown", handleKeyDown);
+    }
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm">
-      <div className="relative w-full max-w-2xl overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900 shadow-2xl">
+    <div
+      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="relative w-full max-w-2xl overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900 shadow-2xl"
+      >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-zinc-800 px-6 py-4">
           <div className="flex items-center gap-2">

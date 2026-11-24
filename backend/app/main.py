@@ -4,10 +4,14 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-# Ensure backend root is in sys.path when running `python app/main.py` directly
+# Ensure backend root and local venv site-packages are in sys.path
 backend_root = Path(__file__).resolve().parent.parent
 if str(backend_root) not in sys.path:
     sys.path.insert(0, str(backend_root))
+
+venv_site = backend_root / "venv" / "Lib" / "site-packages"
+if venv_site.exists() and str(venv_site) not in sys.path:
+    sys.path.insert(0, str(venv_site))
 
 load_dotenv()
 
@@ -15,12 +19,17 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
+from app.database.connection import init_db
+from app.routes.auth import router as auth_router
 from app.routes.enhancement import router as enhancement_router
+
+# Initialize database schemas and verify connection on module load
+init_db()
 
 app = FastAPI(
     title="AquaVision Backend API",
     description="Underwater Image Enhancement (UWIE) REST API powered by PyTorch and FastAPI.",
-    version="1.0.0"
+    version="1.0.0",
 )
 
 # CORS middleware allowing all origins for local frontend development
@@ -46,6 +55,7 @@ app.mount("/outputs", StaticFiles(directory=str(OUTPUT_DIR)), name="outputs")
 
 # Include routes
 app.include_router(enhancement_router)
+app.include_router(auth_router)
 
 
 @app.get("/")

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Check, Layers, ChevronDown } from "lucide-react";
 import { listAvailableModels, switchModel } from "@/lib/api";
 
@@ -16,6 +16,28 @@ export default function ModelSwitcher({ onModelSwitched }: { onModelSwitched?: (
   const [activeModel, setActiveModel] = useState<string>("model_combined.pth");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isOpen, setIsOpen] = useState<boolean>(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setIsOpen(false);
+      }
+    }
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("keydown", handleKeyDown);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen]);
 
   const fetchModels = async () => {
     try {
@@ -105,7 +127,7 @@ export default function ModelSwitcher({ onModelSwitched }: { onModelSwitched?: (
   const filteredModels = models.filter((m) => !m.filename.toLowerCase().includes("backup"));
 
   return (
-    <div className="relative">
+    <div className="relative" ref={dropdownRef}>
       <button
         onClick={toggleDropdown}
         disabled={isLoading}

@@ -108,3 +108,44 @@ export interface BenchmarkPayload {
   total_test_images: number;
   models: BenchmarkModelResult[];
 }
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  created_at: string;
+  total_enhancements: number;
+  account_status: string;
+}
+
+export interface AuthResponse {
+  token: string;
+  token_type: string;
+  expires_in_hours: number;
+  user: User;
+}
+
+export interface GuestStatus {
+  guest_id: string;
+  used: number;
+  max_allowed: number;
+  remaining: number;
+  is_quota_exhausted: boolean;
+}
+
+export interface UserHistoryRecord {
+  id: string;
+  filename: string;
+  raw_url: string;
+  enhanced_url: string;
+  annotated_url?: string | null;
+  model_name: string;
+  inference_mode: string;
+  uiqm?: number | null;
+  uciqe?: number | null;
+  psnr?: number | null;
+  metrics?: EnhancementMetrics | null;
+  detections?: MarineDetection[] | null;
+  coral_health?: CoralHealthAssessment | null;
+  created_at?: string | null;
+}

@@ -43,12 +43,17 @@ class MarineDetector:
             try:
                 # Look for custom marine weights or standard lightweight YOLOv8n
                 candidate = Path(model_path) if model_path else (self.backend_root / "weights" / "yolov8n.pt")
+                root_candidate = Path("yolov8n.pt")
                 if candidate.exists():
                     self.yolo_model = YOLO(str(candidate))
+                    print("[MarineDetector] Loaded YOLOv8 engine successfully.")
+                elif root_candidate.exists():
+                    self.yolo_model = YOLO(str(root_candidate))
+                    print("[MarineDetector] Loaded YOLOv8 engine from root.")
                 else:
-                    # Initialize default lightweight nano model
-                    self.yolo_model = YOLO("yolov8n.pt")
-                print("[MarineDetector] Loaded YOLOv8 engine successfully.")
+                    # Weights not locally downloaded; use offline CV Saliency detector
+                    print("[MarineDetector] YOLOv8 weights not found locally, using Computer Vision Saliency detector.")
+                    self.yolo_model = None
             except (ImportError, RuntimeError, OSError, ValueError) as e:
                 print(f"[MarineDetector] Could not load YOLOv8 model ({e}), using Computer Vision Saliency detector.")
                 self.yolo_model = None

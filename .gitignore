@@ -80,6 +80,11 @@ htmlcov/
 *.log
 *.tmp
 *.bak
+*.db
+*.sqlite
+*.sqlite3
+aquavision_fallback.db
+backend/aquavision_fallback.db
 
 # Agent & Planning files
 AGENTS.md

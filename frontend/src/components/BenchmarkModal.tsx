@@ -58,6 +58,16 @@ export default function BenchmarkModal({ isOpen, onClose }: BenchmarkModalProps)
     };
   }, [isOpen, data]);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    if (isOpen) {
+      window.addEventListener("keydown", handleKeyDown);
+      return () => window.removeEventListener("keydown", handleKeyDown);
+    }
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const handleCopyLatex = async () => {
@@ -83,8 +93,14 @@ export default function BenchmarkModal({ isOpen, onClose }: BenchmarkModalProps)
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative flex flex-col w-full max-w-5xl max-h-[90vh] bg-zinc-950 border border-cyan-800/40 rounded-2xl shadow-2xl overflow-hidden text-zinc-100">
+    <div
+      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="relative flex flex-col w-full max-w-5xl max-h-[90vh] bg-zinc-950 border border-cyan-800/40 rounded-2xl shadow-2xl overflow-hidden text-zinc-100"
+      >
         
         {/* Modal Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800/80 bg-zinc-900/50">

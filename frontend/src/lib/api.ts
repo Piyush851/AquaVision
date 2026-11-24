@@ -5,11 +5,57 @@ import {
   BenchmarkPayload,
   MarineDetection,
   CoralHealthAssessment,
-  BatchProcessingResponse
+  BatchProcessingResponse,
+  User,
+  AuthResponse,
+  GuestStatus,
+  UserHistoryRecord,
 } from "./types";
 
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") || "http://localhost:8000";
+
+// ---------------------------------------------------------------------------
+// Local Token & Guest Session Management (24-Hour Active Windows)
+// ---------------------------------------------------------------------------
+
+export function getGuestId(): string {
+  if (typeof window === "undefined") return "server_guest";
+  let gid = localStorage.getItem("aquavision_guest_id");
+  if (!gid) {
+    gid = "guest_" + Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
+    localStorage.setItem("aquavision_guest_id", gid);
+  }
+  return gid;
+}
+
+export function getAuthToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem("aquavision_auth_token");
+}
+
+export function setAuthSession(token: string, user: User): void {
+  if (typeof window === "undefined") return;
+  localStorage.setItem("aquavision_auth_token", token);
+  localStorage.setItem("aquavision_user", JSON.stringify(user));
+}
+
+export function clearAuthSession(): void {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem("aquavision_auth_token");
+  localStorage.removeItem("aquavision_user");
+}
+
+export function getStoredUser(): User | null {
+  if (typeof window === "undefined") return null;
+  const raw = localStorage.getItem("aquavision_user");
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
 
 export function resolveImageUrl(path: string | null | undefined): string {
   if (!path) return "";
@@ -57,9 +103,18 @@ export async function uploadAndEnhance(
   const formData = new FormData();
   formData.append("file", file);
 
+  const headers: Record<string, string> = {
+    "X-Guest-ID": getGuestId(),
+  };
+  const token = getAuthToken();
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
   const url = `${API_BASE_URL}/api/v1/enhance/upload?force_classical=${forceClassical}`;
   const res = await fetch(url, {
     method: "POST",
+    headers,
     body: formData,
   });
 
@@ -72,6 +127,145 @@ export async function uploadAndEnhance(
       errorDetail = `Server responded with ${res.status}`;
     }
     throw new Error(errorDetail);
+  }
+
+  return res.json();
+}
+
+// ---------------------------------------------------------------------------
+// Authentication & Profile Services
+// ---------------------------------------------------------------------------
+
+export async function signupUser(
+  name: string,
+  email: string,
+  password: string
+): Promise<AuthResponse> {
+  const res = await fetch(`${API_BASE_URL}/api/v1/auth/signup`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, email, password }),
+  });
+
+  if (!res.ok) {
+    let msg = "Sign up failed";
+    try {
+      const data = await res.json();
+      if (data.detail) msg = data.detail;
+    } catch {
+      msg = `Server returned ${res.status}`;
+    }
+    throw new Error(msg);
+  }
+
+  const authData: AuthResponse = await res.json();
+  setAuthSession(authData.token, authData.user);
+  return authData;
+}
+
+export async function loginUser(
+  email: string,
+  password: string
+): Promise<AuthResponse> {
+  const res = await fetch(`${API_BASE_URL}/api/v1/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+
+  if (!res.ok) {
+    let msg = "Sign in failed";
+    try {
+      const data = await res.json();
+      if (data.detail) msg = data.detail;
+    } catch {
+      msg = `Server returned ${res.status}`;
+    }
+    throw new Error(msg);
+  }
+
+  const authData: AuthResponse = await res.json();
+  setAuthSession(authData.token, authData.user);
+  return authData;
+}
+
+export async function logoutUser(): Promise<void> {
+  const token = getAuthToken();
+  if (token) {
+    try {
+      await fetch(`${API_BASE_URL}/api/v1/auth/logout`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    } catch {
+      // Best-effort logout notification to server
+    }
+  }
+  clearAuthSession();
+}
+
+export async function getCurrentUserProfile(): Promise<User | null> {
+  const token = getAuthToken();
+  if (!token) return null;
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/v1/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
+    if (!res.ok) {
+      if (res.status === 401) {
+        clearAuthSession();
+        return null;
+      }
+      return getStoredUser();
+    }
+    const user: User = await res.json();
+    setAuthSession(token, user);
+    return user;
+  } catch {
+    return getStoredUser();
+  }
+}
+
+export async function getGuestStatus(): Promise<GuestStatus> {
+  const headers: Record<string, string> = {
+    "X-Guest-ID": getGuestId(),
+  };
+  const token = getAuthToken();
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  const res = await fetch(`${API_BASE_URL}/api/v1/auth/guest-status`, {
+    headers,
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    return {
+      guest_id: getGuestId(),
+      used: 0,
+      max_allowed: 5,
+      remaining: 5,
+      is_quota_exhausted: false,
+    };
+  }
+
+  return res.json();
+}
+
+export async function getUserHistory(): Promise<UserHistoryRecord[]> {
+  const token = getAuthToken();
+  if (!token) return [];
+
+  const res = await fetch(`${API_BASE_URL}/api/v1/auth/history`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to fetch user enhancement history: ${res.status}`);
   }
 
   return res.json();
