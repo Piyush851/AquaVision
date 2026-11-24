@@ -70,7 +70,7 @@ export default function VideoProcessor() {
     setError(null);
 
     try {
-      const res = await enhanceVideo(selectedFile, sideBySide, maxFrames);
+      const res = await enhanceVideo(selectedFile, sideBySide, maxFrames, emaAlpha);
       setVideoResult(res);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Subsea video enhancement failed.";

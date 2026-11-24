@@ -352,11 +352,12 @@ export interface VideoEnhancementResult {
 export async function enhanceVideo(
   file: File,
   sideBySide: boolean = true,
-  maxFrames: number = 300
+  maxFrames: number = 300,
+  temporalBlend: number = 0.25
 ): Promise<VideoEnhancementResult> {
   const formData = new FormData();
   formData.append("file", file);
-  const url = `${API_BASE_URL}/api/v1/enhance/video?side_by_side=${sideBySide}&max_frames=${maxFrames}`;
+  const url = `${API_BASE_URL}/api/v1/enhance/video?side_by_side=${sideBySide}&max_frames=${maxFrames}&temporal_blend=${temporalBlend}`;
   const res = await fetch(url, {
     method: "POST",
     body: formData,

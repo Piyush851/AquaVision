@@ -67,6 +67,12 @@ class VideoEnhancer:
 
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         writer = cv2.VideoWriter(str(out_path), fourcc, out_fps, (out_width, out_height))
+        if not writer.isOpened():
+            for c in ['avc1', 'XVID', 'MJPG']:
+                fourcc = cv2.VideoWriter_fourcc(*c)
+                writer = cv2.VideoWriter(str(out_path), fourcc, out_fps, (out_width, out_height))
+                if writer.isOpened():
+                    break
 
         prev_enhanced = None
         frame_idx = 0
@@ -81,10 +87,14 @@ class VideoEnhancer:
                 # Inference on single frame
                 result = self.engine.enhance_frame(
                     frame,
-                    guided_upsample=guided_upsample,
+                    guided_upsample_flag=guided_upsample,
                     return_metrics=False
                 )
                 curr_enhanced = result["enhanced_image"]
+
+                # Ensure dimensions match expected output
+                if curr_enhanced.shape[:2] != (height, width):
+                    curr_enhanced = cv2.resize(curr_enhanced, (width, height))
 
                 # Temporal anti-flicker blending
                 if self.temporal_blend > 0 and prev_enhanced is not None:

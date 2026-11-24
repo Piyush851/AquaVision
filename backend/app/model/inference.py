@@ -110,12 +110,15 @@ class EnhancerInference:
         raw_bgr: np.ndarray,
         guided_upsample_flag: bool = True,
         return_metrics: bool = True,
-        force_classical: bool = False
+        force_classical: bool = False,
+        **kwargs: Any
     ) -> dict[str, Any]:
         """
         Enhances an in-memory BGR frame with GPU acceleration, optional guided upsampling,
         and real-time optical quality metrology (UIQM, UCIQE, estimated PSNR).
         """
+        if "guided_upsample" in kwargs:
+            guided_upsample_flag = bool(kwargs.pop("guided_upsample"))
         orig_h, orig_w = raw_bgr.shape[:2]
         res_profile = detect_resolution_profile(orig_w, orig_h)
         start_time = time.time()

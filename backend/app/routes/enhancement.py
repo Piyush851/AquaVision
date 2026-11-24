@@ -614,7 +614,8 @@ ALLOWED_VIDEO_EXTENSIONS = {".mp4", ".mov", ".avi", ".webm", ".mkv"}
 async def enhance_video_endpoint(
     file: UploadFile = File(...),
     side_by_side: bool = True,
-    max_frames: int | None = 300
+    max_frames: int | None = 300,
+    temporal_blend: float = 0.25
 ):
     """
     Upload and enhance an underwater video with GPU batch inference and anti-flicker temporal smoothing.
@@ -650,7 +651,7 @@ async def enhance_video_endpoint(
             f.write(chunk)
 
     enhancer = EnhancerInference.get_instance()
-    processor = VideoEnhancer(inference_engine=enhancer, temporal_blend=0.25)
+    processor = VideoEnhancer(inference_engine=enhancer, temporal_blend=temporal_blend)
 
     try:
         stats = processor.process_video(
